@@ -1,0 +1,25 @@
+[project]
+name = "async-siril"
+version = "0.1.0"
+description = "Python async wrapper around Siril astrophotography software."
+readme = "README.md"
+authors = [
+    { name = "Kyle LeNeau", email = "k.leneau@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "asyncio>=3.4.3",
+    "attrs>=25.3.0",
+    "psutil>=7.0.0",
+    "structlog>=25.4.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "cappa>=0.28.0",
+    "streamlit>=1.46.1",
+]
