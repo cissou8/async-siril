@@ -11,7 +11,6 @@ import typing as t
 from async_siril.siril import SirilCli
 from async_siril.command import setext, set32bits, cd, convert, stack
 from async_siril.command import fits_extension
-from rich.prompt import Prompt
 
 log = structlog.stdlib.get_logger()
 
@@ -38,8 +37,6 @@ class CreateMasterBias:
                 await siril.command(convert(self.name, output_dir=f"./{temp.name}"))
                 await siril.command(cd(f"{temp.name}"))
                 await siril.command(stack(self.name, out=f"../../{self.name}_stacked"))
-        
-            Prompt.ask("Press Enter when ready to continue")
 
         log.info("Master bias created")
         

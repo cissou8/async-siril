@@ -20,6 +20,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "astropy>=7.1.0",
     "cappa>=0.28.0",
     "streamlit>=1.46.1",
 ]

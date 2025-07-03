@@ -47,17 +47,16 @@ class CreateMasterDark:
                 await siril.command(convert(self.name, output_dir=f"./{temp.name}"))
                 await siril.command(cd(f"{temp.name}"))
 
+                out = f"../../{self.name}_stacked"
                 if self.dslr:
                     # This is really geared towards the DSLR users
                     # produces: calibrated-master-dark
                     # Dark Optimization: used to identify the thermal noise in non-temp controlled cameras (dslr)
                     await siril.command(preprocess(self.name, bias=f"{str(self.bias.relative_to(temp))}"))
-                    await siril.command(stack(f"pp_{self.name}", out=f"../../{self.name}_stacked"))
+                    await siril.command(stack(f"pp_{self.name}", out=out))
                 else:
-                    await siril.command(stack(self.name, out=f"../../{self.name}_stacked"))
+                    await siril.command(stack(self.name, out=out))
         
-            Prompt.ask("Press Enter when ready to continue")
-
         log.info("Master dark created")
         
 
