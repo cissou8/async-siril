@@ -11,7 +11,6 @@ import typing as t
 from async_siril.siril import SirilCli
 from async_siril.command import setext, set32bits, cd, convert, stack, preprocess
 from async_siril.command import fits_extension
-from rich.prompt import Prompt
 
 log = structlog.stdlib.get_logger()
 

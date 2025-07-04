@@ -22,5 +22,16 @@ build-backend = "hatchling.build"
 dev = [
     "astropy>=7.1.0",
     "cappa>=0.28.0",
+    "ruff>=0.12.2",
     "streamlit>=1.46.1",
 ]
+
+[tool.uv.workspace]
+members = [
+    "packages/siril-command-src",
+]
+
+[tool.ruff]
+# Allow lines to be as long as 120.
+line-length = 120
+extend-exclude = ["**/generated/*"]

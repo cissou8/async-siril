@@ -74,7 +74,7 @@ def container_aware_cpu_limit() -> t.Optional[int]:
             logger.debug(f"found cgroup1 CPU limit - quota: {cpu_quota_us}, period: {cpu_period_us}")
             return int(cpu_quota_us / cpu_period_us)
         else:
-            logger.debug(f"no valid cgroup1 quota or period found")
+            logger.debug("no valid cgroup1 quota or period found")
 
     # cgroup v2
     cgroup2_file = "/sys/fs/cgroup/cpu.max"
@@ -89,7 +89,7 @@ def container_aware_cpu_limit() -> t.Optional[int]:
                     cpu_period_us = int(values[1])
                     return int(cpu_quota_us / cpu_period_us)
             except ValueError as e:  # noqa: F841
-                logger.debug(f"no valid cgroup2 quota or period found")
+                logger.debug("no valid cgroup2 quota or period found")
                 pass
     return None
 

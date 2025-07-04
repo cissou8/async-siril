@@ -1,0 +1,14 @@
+[project]
+name = "siril-command-src"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cappa>=0.28.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.2",
+]

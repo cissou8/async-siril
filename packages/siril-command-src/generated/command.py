@@ -1,122 +1,3 @@
-from __future__ import annotations
-
-import enum
-import structlog.stdlib
-import typing as t
-
-from .command_types import (
-    stack_weighting, 
-    sequence_framing, 
-    compression_type, 
-    fits_extension, 
-    registration_transformation, 
-    pixel_interpolation, 
-    stack_rejmaps, 
-    stack_rejection, 
-    stack_norm, 
-    stack_type, 
-    star_catalog,
-    rmgreen_protection,
-    magnitude_option,
-    sequence_filter_with_value,
-)
-
-
-logger = structlog.stdlib.get_logger()
-
-
-class CommandArgument:
-    def __init__(self, value):
-        self.value = value
-
-    @property
-    def valid(self) -> bool:
-        return self.value is not None
-
-    def __str__(self):
-        if not self.valid:
-            return None
-        if isinstance(self.value, str) and (" " in self.value):
-            return f"'{self.value}'"
-        elif isinstance(self.value, enum.Enum):
-            return str(self.value.value)
-        else:
-            return str(self.value)
-
-
-class CommandFlag:
-    def __init__(self, name: str, value: bool):
-        self.name = name
-        self.value = value
-
-    @property
-    def valid(self) -> bool:
-        return self.value is True
-
-    def __str__(self):
-        return f"-{self.name}"
-
-
-class CommandOptional(CommandArgument):
-    def __init__(self, value: t.Optional[t.Any]):
-        super().__init__(value)
-
-
-class CommandOption:
-    def __init__(self, name: str, value: t.Optional[t.Any]):
-        self.name = name
-        self.value = value
-
-    @property
-    def valid(self) -> bool:
-        return self.value is not None
-
-    def __str__(self):
-        if not self.valid:
-            return None
-        if isinstance(self.value, str) and (" " in self.value):
-            return f"'-{self.name}={self.value}'"
-        elif isinstance(self.value, enum.Enum):
-            return f"-{self.name}={self.value.value}"
-        else:
-            return f"-{self.name}={self.value}"
-
-
-class BaseCommand:
-    def __init__(self):
-        self.name = type(self).__name__
-        self.args = []
-
-    def __str__(self):
-        result = self.name
-        result += " " if len(self.args) > 0 else ""
-        result += " ".join(self.args)
-        return result
-
-    @property
-    def valid(self) -> bool:
-        # return all([o.valid for o in self.args])
-        return True
-
-    def append(
-        self,
-        _input: t.Union[CommandArgument, CommandFlag, CommandOptional, CommandOption],
-    ):
-        if isinstance(_input, CommandArgument) and _input.valid:
-            self.args.append(str(_input))
-        elif isinstance(_input, CommandFlag) and _input.valid:
-            self.args.append(str(_input))
-        elif isinstance(_input, CommandOptional) and _input.valid:
-            self.args.append(_input.value)
-        elif isinstance(_input, CommandOption) and _input.valid:
-            self.args.append(str(_input))
-
-
-####################################################
-# Siril CLI Commands
-####################################################
-
-
 class asinh(BaseCommand):
     """
     .. code-block:: text
@@ -125,17 +6,6 @@ class asinh(BaseCommand):
     
     Stretches the image to show faint objects using an hyperbolic arcsin transformation. The mandatory argument **stretch**, typically between 1 and 1000, will give the strength of the stretch. The black point can be offset by providing an optional **offset** argument in the normalized pixel value of [0, 1]. Finally the option **-human** enables using human eye luminous efficiency weights to compute the luminance used to compute the stretch value for each pixel, instead of the simple mean of the channels pixel values. This stretch method preserves lightness from the L\*a\*b\* color space. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
-
-    def __init__(
-        self,
-        stretch: float,
-        human_weighting: t.Optional[bool] = None,
-        offset: t.Optional[float] = None,
-    ):
-        super().__init__()
-        self.append(CommandFlag("human", human_weighting is not None and human_weighting is True))
-        self.append(CommandArgument(stretch))
-        self.append(CommandArgument(offset))
 
 
 class autoghs(BaseCommand):
@@ -148,25 +18,6 @@ class autoghs(BaseCommand):
     Implicit values of 13 for **B**, making it very focused on the SP brightness range, 0.7 for **HP**, 0 for **LP** are used but can be changed with the options of the same names. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
 
-    def __init__(
-        self,
-        shadowsclip: float,
-        stretchamount: float,
-        linked: t.Optional[bool] = None,
-        b: t.Optional[float] = None,
-        hp: t.Optional[float] = None,
-        lp: t.Optional[float] = None,
-        clipmode: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(shadowsclip))
-        self.append(CommandArgument(stretchamount))
-        self.append(CommandFlag("linked", linked is not None and linked is True))
-        self.append(CommandOption("b", b))
-        self.append(CommandOption("hp", hp))
-        self.append(CommandOption("lp", lp))
-        self.append(CommandOption("clipmode", clipmode))
-
 
 class autostretch(BaseCommand):
     """
@@ -178,18 +29,6 @@ class autostretch(BaseCommand):
     
     Do not use the unlinked version after color calibration, it will alter the white balance
     """
-
-    def __init__(
-        self,
-        linked: t.Optional[bool] = None,
-        shadows_clipping: t.Optional[float] = None,
-        target_background: t.Optional[float] = None,
-    ):
-        super().__init__()
-        self.append(CommandFlag("linked", linked is not None and linked is True))
-        if target_background is not None and shadows_clipping is not None:
-            self.append(CommandArgument(shadows_clipping))
-            self.append(CommandArgument(target_background))
 
 
 class bg(BaseCommand):
@@ -234,23 +73,6 @@ class boxselect(BaseCommand):
     Make a selection area in the currently loaded image with the arguments **x**, **y**, **width** and **height**, with **x** and **y** being the coordinates of the top left corner starting at (0, 0), and **width** and **height**, the size of the selection. The **-clear** argument deletes any selection area. If no argument is passed, the current selection is printed
     """
 
-    def __init__(
-        self,
-        x: t.Optional[int] = None,
-        y: t.Optional[int] = None,
-        width: t.Optional[int] = None,
-        height: t.Optional[int] = None,
-        clear: t.Optional[bool] = None,
-    ):
-        super().__init__()
-        self.append(CommandFlag("clear", clear is not None and clear is True))
-        # TODO: make a rect type for this
-        if x is not None and y is not None and width is not None and height is not None:
-            self.append(CommandArgument(x))
-            self.append(CommandArgument(y))
-            self.append(CommandArgument(width))
-            self.append(CommandArgument(height))
-
 
 class calibrate(BaseCommand):
     """
@@ -274,40 +96,6 @@ class calibrate(BaseCommand):
     If **-fitseq** is provided, the output sequence will be a FITS sequence (single file)
     """
 
-    def __init__(
-        self,
-        base_name: str,
-        bias: t.Optional[str] = None,
-        dark: t.Optional[str] = None,
-        flat: t.Optional[str] = None,
-        cfa: bool = False,
-        debayer: bool = False,
-        fix_xtrans: bool = False,
-        equalize_cfa: bool = False,
-        dark_optimization: bool = False,
-        prefix: t.Optional[str] = None,
-        create_fitsseq: bool = False,
-        cosmetic_correction_from_dark: bool = False,
-        cosmetic_correction_from_bad_pixel_map: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(base_name))
-        self.append(CommandOption("bias", bias))
-        self.append(CommandOption("dark", dark))
-        self.append(CommandOption("flat", flat))
-        if dark is not None and cosmetic_correction_from_dark and cosmetic_correction_from_bad_pixel_map is None:
-            self.append(CommandArgument("-cc=dark"))
-        if cosmetic_correction_from_bad_pixel_map is not None:
-            self.append(CommandOption("cc", "bpm"))
-            self.append(CommandArgument(cosmetic_correction_from_bad_pixel_map))
-        self.append(CommandFlag("cfa", cfa))
-        self.append(CommandFlag("debayer", debayer))
-        self.append(CommandFlag("fix_xtrans", fix_xtrans))
-        self.append(CommandFlag("equalize_cfa", equalize_cfa))
-        self.append(CommandFlag("opt", dark_optimization))
-        self.append(CommandOption("prefix", prefix))
-        self.append(CommandFlag("fitseq", create_fitsseq))
-
 
 class calibrate_single(BaseCommand):
     """
@@ -329,31 +117,6 @@ class calibrate_single(BaseCommand):
     The output filename starts with the prefix "pp\_" unless otherwise specified with option **-prefix=**
     """
 
-    def __init__(
-        self,
-        imagename: str,
-        bias: t.Optional[str] = None,
-        dark: t.Optional[str] = None,
-        flat: t.Optional[str] = None,
-        cfa: bool = False,
-        debayer: bool = False,
-        fix_xtrans: bool = False,
-        equalize_cfa: bool = False,
-        opt: bool = False,
-        prefix: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(imagename))
-        self.append(CommandOption("bias", bias))
-        self.append(CommandOption("dark", dark))
-        self.append(CommandOption("flat", flat))
-        self.append(CommandFlag("cfa", cfa))
-        self.append(CommandFlag("debayer", debayer))
-        self.append(CommandFlag("fix_xtrans", fix_xtrans))
-        self.append(CommandFlag("equalize_cfa", equalize_cfa))
-        self.append(CommandFlag("opt", opt))
-        self.append(CommandOption("prefix", prefix))
-
 
 class capabilities(BaseCommand):
     """
@@ -374,10 +137,6 @@ class catsearch(BaseCommand):
     Searches an object by **name** and adds it to the user annotation catalog. The object is first searched in the annotation catalogs, if not found a request is made to SIMBAD.
     The object can be a solar system object, in which case a prefix, 'a:' for asteroid, 'p:' for planet, 'c:' for comet, 'dp:' for dwarf planet or 's:' for natural satellite, is required before the object name. The search is done for the date, time and observing location found in the image header, using the `IMCCE Miriade service <https://ssp.imcce.fr/webservices/miriade/howto/ephemcc/#howto-sso>`__
     """
-
-    def __init__(self, name: str):
-        super().__init__()
-        self.append(CommandArgument(name))
 
 
 class ccm(BaseCommand):
@@ -403,32 +162,6 @@ class ccm(BaseCommand):
     b' = (m20 \* r + m21 \* g + m22 \* b)^(-1/gamma)
     """
 
-    def __init__(
-        self,
-        m00: float,
-        m01: float,
-        m02: float,
-        m10: float,
-        m11: float,
-        m12: float,
-        m20: float,
-        m21: float,
-        m22: float,
-        gamma: t.Optional[float] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(m00))
-        self.append(CommandArgument(m01))
-        self.append(CommandArgument(m02))
-        self.append(CommandArgument(m10))
-        self.append(CommandArgument(m11))
-        self.append(CommandArgument(m12))
-        self.append(CommandArgument(m20))
-        self.append(CommandArgument(m21))
-        self.append(CommandArgument(m22))
-        if gamma is not None:
-            self.append(CommandArgument(gamma))
-
 
 class cd(BaseCommand):
     """
@@ -440,10 +173,6 @@ class cd(BaseCommand):
     
     The argument **directory** can contain the ~ token, expanded as the home directory, directories with spaces in the name can be protected using single or double quotes
     """
-
-    def __init__(self, directory: str):
-        super().__init__()
-        self.append(CommandArgument(directory))
 
 
 class cdg(BaseCommand):
@@ -467,11 +196,6 @@ class clahe(BaseCommand):
     **cliplimit** sets the threshold for contrast limiting.
     **tilesize** sets the size of grid for histogram equalization. Input image will be divided into equally sized rectangular tiles
     """
-
-    def __init__(self, cliplimit: int, tileSize: int):
-        super().__init__()
-        self.append(CommandArgument(cliplimit))
-        self.append(CommandArgument(tileSize))
 
 
 class close(BaseCommand):
@@ -505,35 +229,6 @@ class conesearch(BaseCommand):
     The list of items that are present in the image can optionally saved to a csv file by passing the argument **-out=**
     """
 
-    def __init__(
-        self,
-        limit_magnitude: t.Optional[int] = None,
-        cat: t.Optional[str] = None,
-        phot: bool = False,
-        obscode: t.Optional[str] = None,
-        tag: t.Optional[str] = None,
-        log: t.Optional[str] = None,
-        trix: t.Optional[int] = None,
-        out: t.Optional[str] = None,
-    ):
-        super().__init__()
-        if limit_magnitude is not None:
-            self.append(CommandArgument(limit_magnitude))
-        if cat is not None:
-            self.append(CommandOption("cat", cat))
-        if phot:
-            self.append(CommandFlag("phot", phot))
-        if obscode is not None:
-            self.append(CommandOption("obscode", obscode))
-        if tag is not None:
-            self.append(CommandOption("tag", tag))
-        if log is not None:
-            self.append(CommandOption("log", log))
-        if trix is not None:
-            self.append(CommandOption("trix", trix))
-        if out is not None:
-            self.append(CommandOption("out", out))
-
 
 class convert(BaseCommand):
     """
@@ -551,23 +246,6 @@ class convert(BaseCommand):
     Links: :ref:`convertraw <convertraw>`, :ref:`link <link>`
     """
 
-    def __init__(
-        self,
-        base_name: str,
-        debayer: bool = False,
-        use_fitseq: bool = False,
-        use_ser: bool = False,
-        start_index: t.Optional[int] = None,
-        output_dir: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(base_name))
-        self.append(CommandFlag("debayer", debayer))
-        self.append(CommandFlag("fitseq", use_fitseq))
-        self.append(CommandFlag("ser", use_ser))
-        self.append(CommandOption("start", start_index))
-        self.append(CommandOption("out", output_dir))
-
 
 class convertraw(BaseCommand):
     """
@@ -579,23 +257,6 @@ class convertraw(BaseCommand):
     
     Links: :ref:`convert <convert>`
     """
-
-    def __init__(
-        self,
-        base_name: str,
-        debayer: bool = False,
-        use_fitseq: bool = False,
-        use_ser: bool = False,
-        start_index: t.Optional[int] = None,
-        output_dir: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(base_name))
-        self.append(CommandFlag("debayer", debayer))
-        self.append(CommandFlag("fitseq", use_fitseq))
-        self.append(CommandFlag("ser", use_ser))
-        self.append(CommandOption("start", start_index))
-        self.append(CommandOption("out", output_dir))
 
 
 class cosme(BaseCommand):
@@ -615,10 +276,6 @@ class cosme(BaseCommand):
     * Lines in the form `L y 0` will fix the bad line at coordinates y.
     """
 
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
-
 
 class cosme_cfa(BaseCommand):
     """
@@ -630,10 +287,6 @@ class cosme_cfa(BaseCommand):
     
     Links: :ref:`cosme <cosme>`
     """
-
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
 
 
 class crop(BaseCommand):
@@ -648,18 +301,6 @@ class crop(BaseCommand):
     
     Links: :ref:`boxselect <boxselect>`
     """
-
-    def __init__(
-        self,
-        x: t.Optional[int] = None,
-        y: t.Optional[int] = None,
-        width: t.Optional[int] = None,
-        height: t.Optional[int] = None,
-    ):
-        super().__init__()
-        # TODO: use rect
-        if x is not None and y is not None and width is not None and height is not None:
-            self.append(CommandArgument(f"{x} {y} {width} {height}"))
 
 
 class denoise(BaseCommand):
@@ -686,26 +327,6 @@ class denoise(BaseCommand):
     
     In very rare cases, blocky coloured artefacts may be found in the output when denoising colour images. The optional argument **-indep** can be used to prevent this by denoising each channel separately. This is slower but will eliminate artefacts
     """
-
-    def __init__(
-        self,
-        nocosmetic: bool = False,
-        mod: t.Optional[float] = None,
-        vst: bool = False,
-        da3d: bool = False,
-        sos: t.Optional[int] = None,
-        rho: t.Optional[float] = None,
-        indep: bool = False,
-    ):
-        super().__init__()
-        # TODO: clean up options with types
-        self.append(CommandFlag("nocosmetic", nocosmetic))
-        self.append(CommandOption("mod", mod))
-        self.append(CommandFlag("vst", vst))
-        self.append(CommandFlag("da3d", da3d))
-        self.append(CommandOption("sos", sos))
-        self.append(CommandOption("rho", rho))
-        self.append(CommandFlag("indep", indep))
 
 
 class dumpheader(BaseCommand):
@@ -743,23 +364,6 @@ class epf(BaseCommand):
     The strength of the filter can be modulated using the **-mod=** argument. If mod = 1.0 the full effect of the filter will be applied; for mod less than 1.0 a proportion of the original image will be mixed with the result, and for mod = 0.0 no filtering will be applied
     """
 
-    def __init__(
-        self,
-        guided: bool = False,
-        d: t.Optional[int] = None,
-        si: t.Optional[float] = None,
-        ss: t.Optional[float] = None,
-        mod: t.Optional[float] = None,
-        guideimage: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandFlag("guided", guided))
-        self.append(CommandOption("d", d))
-        self.append(CommandOption("si", si))
-        self.append(CommandOption("ss", ss))
-        self.append(CommandOption("mod", mod))
-        self.append(CommandOption("guideimage", guideimage))
-
 
 class exit(BaseCommand):
     """
@@ -769,6 +373,7 @@ class exit(BaseCommand):
     
     Quits the application
     """
+
 
 class extract(BaseCommand):
     """
@@ -782,13 +387,6 @@ class extract(BaseCommand):
     Links: :ref:`wavelet <wavelet>`, :ref:`wrecons <wrecons>`, :ref:`split <split>`
     """
 
-    def __init__(
-        self,
-        nbplans: int,
-    ):
-        super().__init__()
-        self.append(CommandOption("nbplans", nbplans))
-
 
 class extract_Green(BaseCommand):
     """
@@ -799,9 +397,6 @@ class extract_Green(BaseCommand):
     Extracts green signal from the loaded CFA image. It reads the Bayer matrix information from the image or the preferences and exports only the averaged green filter data as a new half-sized FITS file. A new file is created, its name is prefixed with "Green\_"
     """
 
-    def __init__(self):
-        super().__init__()
-
 
 class extract_Ha(BaseCommand):
     """
@@ -811,13 +406,6 @@ class extract_Ha(BaseCommand):
     
     Extracts H-Alpha signal from the loaded CFA image. It reads the Bayer matrix information from the image or the preferences and exports only the red filter data as a new half-sized FITS file. If the argument **-upscale** is provided, the output will be upscaled x2 to match the full sensor resolution, for example to match other images produced by the same family of sensors. A new file is created, its name is prefixed with "Ha\_"
     """
-
-    def __init__(
-        self,
-        upscale: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandFlag("upscale", upscale))
 
 
 class extract_HaOIII(BaseCommand):
@@ -831,14 +419,6 @@ class extract_HaOIII(BaseCommand):
     The optional argument **-resample={ha|oiii}** sets whether to upsample the Ha image or downsample the OIII image to have images the same size. If this argument is not provided, no resampling will be carried out and the OIII image will have twice the height and width of the Ha image
     """
 
-    def __init__(
-        self,
-        resample: t.Optional[str] = None,
-    ):
-        super().__init__()
-        # TODO: give the resample a enum type
-        self.append(CommandOption("resample", resample))
-
 
 class fdiv(BaseCommand):
     """
@@ -850,15 +430,6 @@ class fdiv(BaseCommand):
     
     Links: :ref:`idiv <idiv>`
     """
-
-    def __init__(
-        self,
-        filename: str,
-        scalar: float,
-    ):
-        super().__init__()
-        self.append(CommandArgument(filename))
-        self.append(CommandArgument(scalar))
 
 
 class ffill(BaseCommand):
@@ -872,20 +443,6 @@ class ffill(BaseCommand):
     Links: :ref:`fill <fill>`, :ref:`boxselect <boxselect>`
     """
 
-    def __init__(
-        self,
-        value: float,
-        x: t.Optional[int] = None,
-        y: t.Optional[int] = None,
-        width: t.Optional[int] = None,
-        height: t.Optional[int] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(value))
-        # TODO: use rect
-        if x is not None and y is not None and width is not None and height is not None:
-            self.append(CommandArgument(f"{x} {y} {width} {height}"))
-
 
 class fftd(BaseCommand):
     """
@@ -895,15 +452,6 @@ class fftd(BaseCommand):
     
     Applies a Fast Fourier Transform to the loaded image. **modulus** and **phase** given in argument are the names of the saved in FITS files
     """
-
-    def __init__(
-        self,
-        modulus: str,
-        phase: str,
-    ):
-        super().__init__()
-        self.append(CommandArgument(modulus))
-        self.append(CommandArgument(phase))
 
 
 class ffti(BaseCommand):
@@ -915,15 +463,6 @@ class ffti(BaseCommand):
     Retrieves corrected image applying an inverse transformation. The **modulus** and **phase** arguments are the input file names, the result will be the new loaded image
     """
 
-    def __init__(
-        self,
-        modulus: str,
-        phase: str,
-    ):
-        super().__init__()
-        self.append(CommandArgument(modulus))
-        self.append(CommandArgument(phase))
-
 
 class fill(BaseCommand):
     """
@@ -934,19 +473,6 @@ class fill(BaseCommand):
     Fills the loaded image entirely or only the selection if there is one with pixels having the **value** intensity expressed in ADU
     """
 
-    def __init__(
-        self,
-        value: float,
-        x: t.Optional[int] = None,
-        y: t.Optional[int] = None,
-        width: t.Optional[int] = None,
-        height: t.Optional[int] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(value))
-        # TODO: use rect
-        if x is not None and y is not None and width is not None and height is not None:
-            self.append(CommandArgument(f"{x} {y} {width} {height}"))
 
 class find_cosme(BaseCommand):
     """
@@ -956,15 +482,6 @@ class find_cosme(BaseCommand):
     
     Applies an automatic detection and replacement of cold and hot pixels in the loaded image, with the thresholds passed in arguments in sigma units
     """
-
-    def __init__(
-        self,
-        cold_sigma: float,
-        hot_sigma: float,
-    ):
-        super().__init__()
-        self.append(CommandArgument(cold_sigma))
-        self.append(CommandArgument(hot_sigma))
 
 
 class find_cosme_cfa(BaseCommand):
@@ -977,16 +494,6 @@ class find_cosme_cfa(BaseCommand):
     
     Links: :ref:`find_cosme <find_cosme>`
     """
-
-    def __init__(
-        self,
-        cold_sigma: float,
-        hot_sigma: float,
-    ):
-        super().__init__()
-        self.append(CommandArgument(cold_sigma))
-        self.append(CommandArgument(hot_sigma))
-
 
 
 class find_hot(BaseCommand):
@@ -1003,17 +510,6 @@ class find_hot(BaseCommand):
     Lines ``C x 0 type`` will fix the bad column at coordinates x.
     Lines ``L y 0 type`` will fix the bad line at coordinates y.
     """
-
-    def __init__(
-        self,
-        filename: str,
-        cold_sigma: float,
-        hot_sigma: float,
-    ):
-        super().__init__()
-        self.append(CommandArgument(filename))
-        self.append(CommandArgument(cold_sigma))
-        self.append(CommandArgument(hot_sigma))
 
 
 class findcompstars(BaseCommand):
@@ -1037,33 +533,6 @@ class findcompstars(BaseCommand):
     Links: :ref:`light_curve <light_curve>`
     """
 
-    # TODO: Fix with enum types to match command
-    def __init__(
-        self,
-        star_name: str,
-        narrow: bool = False,
-        catalog: t.Optional[str] = None,
-        dvmag: t.Optional[float] = None,
-        dbv: t.Optional[float] = None,
-        emag: t.Optional[float] = None,
-        out: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(star_name))
-        if narrow:
-            self.append(CommandFlag("narrow", narrow))
-        if catalog is not None:
-            self.append(CommandOption("catalog", catalog))
-        if dvmag is not None:
-            self.append(CommandOption("dvmag", dvmag))
-        if dbv is not None:
-            self.append(CommandOption("dbv", dbv))
-        if emag is not None:
-            self.append(CommandOption("emag", emag))
-        if out is not None:
-            self.append(CommandOption("out", out))
-
-
 
 class findstar(BaseCommand):
     """
@@ -1084,18 +553,6 @@ class findstar(BaseCommand):
     
     Links: :ref:`psf <psf>`, :ref:`setfindstar <setfindstar>`, :ref:`clearstar <clearstar>`
     """
-
-    def __init__(
-        self,
-        out: t.Optional[str] = None,
-        layer: t.Optional[int] = None,
-        maxstars: t.Optional[int] = None,
-    ):
-        super().__init__()
-        self.append(CommandOption("out", out))
-        self.append(CommandOption("layer", layer))
-        self.append(CommandOption("maxstars", maxstars))
-
 
 
 class fix_xtrans(BaseCommand):
@@ -1122,18 +579,6 @@ class fixbanding(BaseCommand):
     **-vertical** option enables to perform vertical banding removal, horizontal is the default
     """
 
-    def __init__(
-        self,
-        amount: int,
-        sigma: int,
-        vertical: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandArgument(amount))
-        self.append(CommandArgument(sigma))
-        if vertical:
-            self.append(CommandFlag("vertical", vertical))
-
 
 class fmedian(BaseCommand):
     """
@@ -1146,15 +591,6 @@ class fmedian(BaseCommand):
     The output pixel is computed as : out=mod x m + (1 − mod) x in, where m is the median-filtered pixel value. A modulation's value of 1 will apply no modulation
     """
 
-    def __init__(
-        self,
-        ksize: int,
-        modulation: float,
-    ):
-        super().__init__()
-        self.append(CommandArgument(ksize))
-        self.append(CommandArgument(modulation))
-
 
 class fmul(BaseCommand):
     """
@@ -1164,13 +600,6 @@ class fmul(BaseCommand):
     
     Multiplies the loaded image by the **scalar** given in argument
     """
-
-    def __init__(
-        self,
-        scalar: float,
-    ):
-        super().__init__()
-        self.append(CommandArgument(scalar))
 
 
 class gauss(BaseCommand):
@@ -1186,13 +615,6 @@ class gauss(BaseCommand):
     Links: :ref:`unsharp <unsharp>`
     """
 
-    def __init__(
-        self,
-        sigma: float,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sigma))
-
 
 class get(BaseCommand):
     """
@@ -1207,19 +629,6 @@ class get(BaseCommand):
     Links: :ref:`set <set>`
     """
 
-    def __init__(
-        self,
-        list_all: bool = False,
-        detailed: bool = False,
-        variable: t.Optional[str] = None,
-    ):
-        super().__init__()
-        if variable is not None:
-            self.append(CommandArgument(variable))
-        elif list_all and not detailed:
-            self.append(CommandFlag("a", list_all))
-        elif list_all and detailed:
-            self.append(CommandFlag("A", detailed))
 
 class getref(BaseCommand):
     """
@@ -1229,14 +638,6 @@ class getref(BaseCommand):
     
     Prints information about the reference image of the sequence given in argument. First image has index 0
     """
-
-    def __init__(
-        self,
-        sequencename: str,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-
 
 
 class ght(BaseCommand):
@@ -1257,43 +658,6 @@ class ght(BaseCommand):
     Optionally the parameter **[channels]** may be used to specify the channels to apply the stretch to: this may be R, G, B, RG, RB or GB. The default is all channels. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
 
-    def __init__(
-        self,
-        D: float,
-        B: t.Optional[float] = None,
-        LP: t.Optional[float] = None,
-        SP: t.Optional[float] = None,
-        HP: t.Optional[float] = None,
-        clipmode: t.Optional[str] = None,
-        human: t.Optional[bool] = None,
-        even: t.Optional[bool] = None,
-        independent: t.Optional[bool] = None,
-        sat: t.Optional[bool] = None,
-        channels: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(D))
-        if B is not None:
-            self.append(CommandOption("B", B))
-        if LP is not None:
-            self.append(CommandOption("LP", LP))
-        if SP is not None:
-            self.append(CommandOption("SP", SP))
-        if HP is not None:
-            self.append(CommandOption("HP", HP))
-        if clipmode is not None:
-            self.append(CommandOption("clipmode", clipmode))
-        # TODO: make an enum for these flags
-        if human:
-            self.append(CommandFlag("human", human))
-        if even:
-            self.append(CommandFlag("even", even))
-        if independent:
-            self.append(CommandFlag("independent", independent))
-        if sat:
-            self.append(CommandFlag("sat", sat))
-        if channels is not None:
-            self.append(CommandArgument(channels))
 
 class graxpert_bg(BaseCommand):
     """
@@ -1319,51 +683,6 @@ class graxpert_bg(BaseCommand):
     **-ai_batch_size=** sets the batch size for AI operations (denoising and the background removal AI algorithm) (default = 4: bigger batch sizes may improve performance, especially on CPU, but require more memory). The optional argument **-ai_version=** forces a specific version of the AI model. Note that GraXpert AI background removal is comparatively fast anyway so at present there is little need to specify an older model for speed reasons even if running in CPU-only mode. If this argument is omitted, the latest available AI model version is used
     """
 
-    def __init__(
-        self,
-        algo: t.Optional[str] = None,
-        mode: t.Optional[str] = None,
-        kernel: t.Optional[str] = None,
-        ai_batch_size: t.Optional[int] = None,
-        pts_per_row: t.Optional[int] = None,
-        splineorder: t.Optional[int] = None,
-        samplesize: t.Optional[int] = None,
-        smoothing: t.Optional[float] = None,
-        bgtol: t.Optional[float] = None,
-        gpu: t.Optional[bool] = None,
-        cpu: t.Optional[bool] = None,
-        ai_version: t.Optional[str] = None,
-        keep_bg: t.Optional[bool] = None,
-    ):
-        super().__init__()
-        if algo is not None:
-            self.append(CommandOption("algo", algo))
-        if mode is not None:
-            self.append(CommandOption("mode", mode))
-        if kernel is not None:
-            self.append(CommandOption("kernel", kernel))
-        if ai_batch_size is not None:
-            self.append(CommandOption("ai_batch_size", ai_batch_size))
-        if pts_per_row is not None:
-            self.append(CommandOption("pts_per_row", pts_per_row))
-        if splineorder is not None:
-            self.append(CommandOption("splineorder", splineorder))
-        if samplesize is not None:
-            self.append(CommandOption("samplesize", samplesize))
-        if smoothing is not None:
-            self.append(CommandOption("smoothing", smoothing))
-        if bgtol is not None:
-            self.append(CommandOption("bgtol", bgtol))
-        if gpu:
-            self.append(CommandFlag("gpu", gpu))
-        if cpu:
-            self.append(CommandFlag("cpu", cpu))
-        if ai_version is not None:
-            self.append(CommandOption("ai_version", ai_version))
-        if keep_bg:
-            self.append(CommandFlag("keep_bg", keep_bg))
-
-
 
 class graxpert_denoise(BaseCommand):
     """
@@ -1379,24 +698,6 @@ class graxpert_denoise(BaseCommand):
     **-gpu** sets GraXpert to use a GPU if available (and otherwise fall back to CPU);
     **-ai_batch_size=** sets the batch size for AI operations (denoising and the background removal AI algorithm) (default = 4: bigger batch sizes may improve performance, especially on CPU, but require more memory). The optional argument **-ai_version=** forces a specific version of the AI model. For CPU-only usage the latest models may run very slowly, in which case an older model version such as 2.0.0 may provide a more acceptable balance between performance and runtime. If this argument is omitted, the latest available AI model version is used
     """
-
-    def __init__(
-        self,
-        strength: t.Optional[float] = None,
-        gpu: t.Optional[bool] = None,
-        cpu: t.Optional[bool] = None,
-        ai_version: t.Optional[str] = None,
-    ):
-        super().__init__()
-        if strength is not None:
-            self.append(CommandOption("strength", strength))
-        # TODO: make an enum for these flags
-        if gpu:
-            self.append(CommandFlag("gpu", gpu))
-        if cpu:
-            self.append(CommandFlag("cpu", cpu))
-        if ai_version is not None:
-            self.append(CommandOption("ai_version", ai_version))
 
 
 class grey_flat(BaseCommand):
@@ -1418,11 +719,6 @@ class help(BaseCommand):
     Lists the available commands or help for one command
     """
 
-    def __init__(self, command: t.Optional[str] = None):
-        super().__init__()
-        if command is not None:
-            self.append(CommandArgument(command))
-
 
 class histo(BaseCommand):
     """
@@ -1433,11 +729,6 @@ class histo(BaseCommand):
     Calculates the histogram of the **layer** of the loaded image and produces file histo\_[channel name].dat in the working directory.
     layer = 0, 1 or 2 with 0=red, 1=green and 2=blue
     """
-
-    def __init__(self, channel: int):
-        super().__init__()
-        # TODO: confirm this command
-        self.append(CommandArgument(channel))
 
 
 class iadd(BaseCommand):
@@ -1450,10 +741,6 @@ class iadd(BaseCommand):
     Result will be in 32 bits per channel if allowed in the preferences
     """
 
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
-
 
 class icc_assign(BaseCommand):
     """
@@ -1464,10 +751,6 @@ class icc_assign(BaseCommand):
     Assigns the ICC profile specified in the argument to the current image.
     One of the following special arguments may be provided to use the respective built-in profiles: **sRGB**, **sRGBlinear**, **Rec2020**, **Rec2020linear**, **working** to set the working mono or RGB color profile, (for mono images only) **linear**, or the path to an ICC profile file may be provided. If a built-in profile is specified with a monochrome image loaded, the Gray profile with the corresponding TRC will be used
     """
-
-    def __init__(self, profile: str):
-        super().__init__()
-        self.append(CommandArgument(profile))
 
 
 class icc_convert_to(BaseCommand):
@@ -1482,11 +765,6 @@ class icc_convert_to(BaseCommand):
     A second argument may be provided to specify the color transform intent: this should be one of **perceptual**, **relative** (for relative colorimetric), **saturation** or **absolute** (for absolute colorimetric)
     """
 
-    def __init__(self, profile: str, intent: t.Optional[str] = None):
-        super().__init__()
-        self.append(CommandArgument(profile))
-        if intent is not None:
-            self.append(CommandArgument(intent))
 
 class icc_remove(BaseCommand):
     """
@@ -1512,10 +790,6 @@ class idiv(BaseCommand):
     Links: :ref:`fdiv <fdiv>`
     """
 
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
-
 
 class imul(BaseCommand):
     """
@@ -1526,10 +800,6 @@ class imul(BaseCommand):
     Multiplies image **filename** by the loaded image.
     Result will be in 32 bits per channel if allowed in the preferences
     """
-
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
 
 
 class invght(BaseCommand):
@@ -1543,45 +813,6 @@ class invght(BaseCommand):
     Links: :ref:`ght <ght>`
     """
 
-    def __init__(
-        self,
-        D: t.Optional[float] = None,
-        B: t.Optional[float] = None,
-        LP: t.Optional[float] = None,
-        SP: t.Optional[float] = None,
-        HP: t.Optional[float] = None,
-        clipmode: t.Optional[str] = None,
-        human: t.Optional[bool] = None,
-        even: t.Optional[bool] = None,
-        independent: t.Optional[bool] = None,
-        sat: t.Optional[bool] = None,
-        channels: t.Optional[str] = None,
-    ):
-        super().__init__()
-        if D is not None:
-            self.append(CommandOption("D", D))
-        if B is not None:
-            self.append(CommandOption("B", B))
-        if LP is not None:
-            self.append(CommandOption("LP", LP))
-        if SP is not None:
-            self.append(CommandOption("SP", SP))
-        if HP is not None:
-            self.append(CommandOption("HP", HP))
-        if clipmode is not None:
-            self.append(CommandOption("clipmode", clipmode))
-        # TODO: make an enum for these flags (same as GHT)
-        if human:
-            self.append(CommandFlag("human", human))
-        if even:
-            self.append(CommandFlag("even", even))
-        if independent:
-            self.append(CommandFlag("independent", independent))
-        if sat:
-            self.append(CommandFlag("sat", sat))
-        if channels is not None:
-            self.append(CommandArgument(channels))
-
 
 class invmodasinh(BaseCommand):
     """
@@ -1594,42 +825,6 @@ class invmodasinh(BaseCommand):
     Links: :ref:`modasinh <modasinh>`
     """
 
-    def __init__(
-        self,
-        D: t.Optional[float] = None,
-        LP: t.Optional[float] = None,
-        SP: t.Optional[float] = None,
-        HP: t.Optional[float] = None,
-        clipmode: t.Optional[str] = None,
-        human: t.Optional[bool] = None,
-        even: t.Optional[bool] = None,
-        independent: t.Optional[bool] = None,
-        sat: t.Optional[bool] = None,
-        channels: t.Optional[str] = None,
-    ):
-        super().__init__()
-        if D is not None:
-            self.append(CommandOption("D", D))
-        if LP is not None:
-            self.append(CommandOption("LP", LP))
-        if SP is not None:
-            self.append(CommandOption("SP", SP))
-        if HP is not None:
-            self.append(CommandOption("HP", HP))
-        if clipmode is not None:
-            self.append(CommandOption("clipmode", clipmode))
-        # TODO: make an enum for these flags (same as GHT)
-        if human:
-            self.append(CommandFlag("human", human))
-        if even:
-            self.append(CommandFlag("even", even))
-        if independent:
-            self.append(CommandFlag("independent", independent))
-        if sat:
-            self.append(CommandFlag("sat", sat))
-        if channels is not None:
-            self.append(CommandArgument(channels))
-
 
 class invmtf(BaseCommand):
     """
@@ -1641,23 +836,6 @@ class invmtf(BaseCommand):
     
     Links: :ref:`mtf <mtf>`
     """
-
-    def __init__(
-        self,
-        low: t.Optional[float] = None,
-        mid: t.Optional[float] = None,
-        high: t.Optional[float] = None,
-        channels: t.Optional[str] = None,
-    ):
-        super().__init__()
-        if low is not None:
-            self.append(CommandOption("low", low))
-        if mid is not None:
-            self.append(CommandOption("mid", mid))
-        if high is not None:
-            self.append(CommandOption("high", high))
-        if channels is not None:
-            self.append(CommandArgument(channels))
 
 
 class isub(BaseCommand):
@@ -1672,10 +850,6 @@ class isub(BaseCommand):
     Links: :ref:`threshlo <threshlo>`
     """
 
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
-
 
 class jsonmetadata(BaseCommand):
     """
@@ -1685,22 +859,6 @@ class jsonmetadata(BaseCommand):
     
     Dumps metadata and statistics of the currently loaded image in JSON form. The file name is required, even if the image is already loaded. Image data may not be read from the file if it is the current loaded image and if the **-stats_from_loaded** option is passed. Statistics can be disabled by providing the **-nostats** option. A file containing the JSON data is created with default file name '$(FITS_file_without_ext).json' and can be changed with the **-out=** option
     """
-
-    def __init__(
-        self,
-        FITS_file: str,
-        stats_from_loaded: t.Optional[bool] = None,
-        nostats: t.Optional[bool] = None,
-        out: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(FITS_file))
-        if stats_from_loaded:
-            self.append(CommandFlag("stats_from_loaded", stats_from_loaded))
-        if nostats:
-            self.append(CommandFlag("nostats", nostats))
-        if out:
-            self.append(CommandOption("out", out))
 
 
 class light_curve(BaseCommand):
@@ -1721,33 +879,6 @@ class light_curve(BaseCommand):
     Links: :ref:`seqpsf <seqpsf>`
     """
 
-    def __init__(
-        self,
-        sequencename: str,
-        channel: str,
-        autoring: t.Optional[bool] = None,
-        at: t.Optional[str] = None,
-        wcs: t.Optional[str] = None,
-        refat: t.Optional[str] = None,
-        refwcs: t.Optional[str] = None,
-        ninastars: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandArgument(channel))
-        if autoring:
-            self.append(CommandFlag("autoring", autoring))
-        if at:
-            self.append(CommandOption("at", at))
-        if wcs:
-            self.append(CommandOption("wcs", wcs))
-        if refat:
-            self.append(CommandOption("refat", refat))
-        if refwcs:
-            self.append(CommandOption("refwcs", refwcs))
-        if ninastars:
-            self.append(CommandOption("ninastars", ninastars))
-
 
 class limit(BaseCommand):
     """
@@ -1764,21 +895,6 @@ class limit(BaseCommand):
     Note that if there are one or more extreme outliers (for example as a result of bad pixels) the **-rescale** and **-posrescale** options may produce an unexpected result. This can be mitigated by applying cosmetic correction to the image first
     """
 
-    def __init__(
-        self,
-        clip: t.Optional[bool] = None,
-        posrescale: t.Optional[bool] = None,
-        rescale: t.Optional[bool] = None,
-    ):
-        super().__init__()
-        # TODO: make an enum for these flags
-        if clip:
-            self.append(CommandFlag("clip", clip))
-        if posrescale:
-            self.append(CommandFlag("posrescale", posrescale))
-        if rescale:
-            self.append(CommandFlag("rescale", rescale))
-
 
 class linear_match(BaseCommand):
     """
@@ -1790,17 +906,6 @@ class linear_match(BaseCommand):
     
     The algorithm will ignore all reference pixels whose values are outside of the [**low**, **high**] range
     """
-
-    def __init__(
-        self,
-        reference: str,
-        low: float,
-        high: float,
-    ):
-        super().__init__()
-        self.append(CommandArgument(reference))
-        self.append(CommandArgument(low))
-        self.append(CommandArgument(high))
 
 
 class link(BaseCommand):
@@ -1814,22 +919,6 @@ class link(BaseCommand):
     Links: :ref:`convert <convert>`
     """
 
-    def __init__(
-        self,
-        basename: str,
-        date: t.Optional[bool] = None,
-        start: t.Optional[int] = None,
-        out: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(basename))
-        if date:
-            self.append(CommandFlag("date", date))
-        if start:
-            self.append(CommandOption("start", start))
-        if out:
-            self.append(CommandOption("out", out))
-
 
 class linstretch(BaseCommand):
     """
@@ -1841,22 +930,6 @@ class linstretch(BaseCommand):
     The argument **[channels]** may optionally be used to specify the channels to apply the stretch to: this may be R, G, B, RG, RB or GB. The default is all channels.
     Optionally the parameter **-sat** may be used to apply the linear stretch to the image saturation channel. This argument only works if all channels are selected. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
-
-    def __init__(
-        self,
-        BP: float,
-        sat: t.Optional[bool] = None,
-        clipmode: t.Optional[str] = None,
-        channels: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandOption("BP", BP))
-        if sat:
-            self.append(CommandFlag("sat", sat))
-        if clipmode:
-            self.append(CommandOption("clipmode", clipmode))
-        if channels:
-            self.append(CommandArgument(channels))
 
 
 class livestack(BaseCommand):
@@ -1877,10 +950,6 @@ class livestack(BaseCommand):
         non-live-stacking, state.
     """
 
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
-
 
 class load(BaseCommand):
     """
@@ -1892,10 +961,6 @@ class load(BaseCommand):
     It first attempts to load **filename**, then **filename**.fit, **filename**.fits and finally all supported formats.
     This scheme is applicable to every Siril command that involves reading files
     """
-
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
 
 
 class log(BaseCommand):
@@ -1938,8 +1003,6 @@ class makepsf(BaseCommand):
     Links: :ref:`psf <psf>`, :ref:`rl <rl>`, :ref:`sb <sb>`, :ref:`wiener <wiener>`
     """
 
-    # TODO: Implement makepsf (complicated)
-
 
 class merge(BaseCommand):
     """
@@ -1949,22 +1012,6 @@ class merge(BaseCommand):
     
     Merges several sequences of the same type (FITS images, FITS sequence or SER) and same image properties into a new sequence with base name **newseq** created in the current working directory, with the same type. The input sequences can be in different directories, can specified either in absolute or relative path, with the exact .seq name or with only the base name with or without the trailing '\_'
     """
-
-    def __init__(
-        self,
-        sequence1: str,
-        sequence2: str,
-        output_sequence: str,
-        additional_sequences: t.Optional[t.List[str]] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence1))
-        self.append(CommandArgument(sequence2))
-        if additional_sequences:
-            for sequence in additional_sequences:
-                self.append(CommandArgument(sequence))
-        if output_sequence:
-            self.append(CommandArgument(output_sequence))
 
 
 class merge_cfa(BaseCommand):
@@ -1976,21 +1023,6 @@ class merge_cfa(BaseCommand):
     Builds a Bayer masked color image from 4 separate images containing the data from Bayer subchannels CFA0, CFA1, CFA2 and CFA3. (The corresponding command to split the CFA pattern into subchannels is **split_cfa**.) This function can be used as part of a workflow applying some processing to the individual Bayer subchannels prior to demosaicing. The fifth parameter **bayerpattern** specifies the Bayer matrix pattern to recreate: **bayerpattern** should be one of 'RGGB', 'BGGR', 'GRBG' or 'GBRG'
     """
 
-    def __init__(
-        self,
-        file_CFA0: str,
-        file_CFA1: str,
-        file_CFA2: str,
-        file_CFA3: str,
-        bayerpattern: str,
-    ):
-        super().__init__()
-        self.append(CommandArgument(file_CFA0))
-        self.append(CommandArgument(file_CFA1))
-        self.append(CommandArgument(file_CFA2))
-        self.append(CommandArgument(file_CFA3))
-        self.append(CommandArgument(bayerpattern))
-
 
 class mirrorx(BaseCommand):
     """
@@ -2001,10 +1033,6 @@ class mirrorx(BaseCommand):
     Flips the loaded image about the horizontal axis. Option **-bottomup** will only flip it if it's not already bottom-up
     """
 
-    def __init__(self, bottom_up: bool = True):
-        super().__init__()
-        self.append(CommandFlag("bottomup", bottom_up))
-
 
 class mirrorx_single(BaseCommand):
     """
@@ -2014,10 +1042,6 @@ class mirrorx_single(BaseCommand):
     
     Flips the image about the horizontal axis, only if needed (if it's not already bottom-up). It takes the image file name as argument, allowing it to avoid reading image data entirely if no flip is required. Image is overwritten if a flip is made
     """
-
-    def __init__(self, imagename: str):
-        super().__init__()
-        self.append(CommandArgument(imagename))
 
 
 class mirrory(BaseCommand):
@@ -2047,33 +1071,6 @@ class modasinh(BaseCommand):
     Optionally the parameter **[channels]** may be used to specify the channels to apply the stretch to: this may be R, G, B, RG, RB or GB. The default is all channels. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
 
-    def __init__(
-        self,
-        D: float,
-        LP: float = 0.0,
-        SP: float = 0.0,
-        HP: float = 1.0,
-        clipmode: str = "rgbblend",
-        human: bool = False,
-        even: bool = False,
-        independent: bool = False,
-        sat: bool = False,
-        channels: str = "RGB",
-    ):
-        super().__init__()
-        self.append(CommandArgument(D))
-        self.append(CommandArgument(LP))
-        self.append(CommandArgument(SP))
-        self.append(CommandArgument(HP))
-        # TODO: make an enum for clipmode
-        self.append(CommandArgument(clipmode))
-        # TODO: make an enum for these flags (same as GHT)
-        self.append(CommandFlag("human", human))
-        self.append(CommandFlag("even", even))
-        self.append(CommandFlag("independent", independent))
-        self.append(CommandFlag("sat", sat))
-        self.append(CommandArgument(channels))
-
 
 class mtf(BaseCommand):
     """
@@ -2089,19 +1086,6 @@ class mtf(BaseCommand):
     Links: :ref:`autostretch <autostretch>`
     """
 
-    def __init__(
-        self,
-        low: float,
-        midtones: float,
-        high: float,
-        channels: str = "RGB",
-    ):
-        super().__init__()
-        self.append(CommandArgument(low))
-        self.append(CommandArgument(midtones))
-        self.append(CommandArgument(high))
-        # TODO: make an enum for these channels
-        self.append(CommandArgument(channels))
 
 class neg(BaseCommand):
     """
@@ -2121,10 +1105,6 @@ class nozero(BaseCommand):
     
     Replaces null values by **level** values. Useful before an idiv or fdiv operation, mostly for 16-bit images
     """
-
-    def __init__(self, level: int):
-        super().__init__()
-        self.append(CommandArgument(level))
 
 
 class offline(BaseCommand):
@@ -2147,10 +1127,6 @@ class offset(BaseCommand):
     
     In 16-bit mode, values of pixels that fall outside of [0, 65535] are clipped. In 32-bit mode, no clipping occurs
     """
-
-    def __init__(self, value: float):
-        super().__init__()
-        self.append(CommandArgument(value))
 
 
 class online(BaseCommand):
@@ -2176,11 +1152,6 @@ class parse(BaseCommand):
     The keyword *$seqname$* can also be used when a sequence is loaded
     """
 
-    def __init__(self, str: str, r: bool = False):
-        super().__init__()
-        self.append(CommandArgument(str))
-        self.append(CommandFlag("r", r))
-
 
 class pcc(BaseCommand):
     """
@@ -2194,26 +1165,6 @@ class pcc(BaseCommand):
     The star catalog used is NOMAD by default, it can be changed by providing **-catalog=apass**, **-catalog=localgaia** or **-catalog=gaia**. If installed locally, the remote NOMAD (the complete version) can be forced by providing **-catalog=nomad**
     Background reference outlier tolerance can be specified in sigma units using **-bgtol=lower,upper**: these default to -2.8 and +2.0
     """
-
-    def __init__(
-        self,
-        limit_mag: magnitude_option = magnitude_option.DEFAULT_MAGNITUDE,
-        magnitude_value: float = 0.0,
-        catalog: t.Optional[star_catalog] = None,
-        bgtol: t.Optional[t.Tuple[float, float]] = None,
-    ):
-        super().__init__()
-        if limit_mag == magnitude_option.MAGNITUDE_OFFSET and magnitude_value != 0.0:
-            if magnitude_value > 0.0:
-                self.append(CommandOption("limitmag", f"+{magnitude_value}"))
-            else:
-                self.append(CommandOption("limitmag", f"-{magnitude_value}"))
-        elif limit_mag == magnitude_option.ABSOLUTE_MAGNITUDE:
-            self.append(CommandOption("limitmag", magnitude_value))
-        if catalog is not None:
-            self.append(CommandOption("catalog", catalog))
-        if bgtol is not None:
-            self.append(CommandOption("bgtol", f"{bgtol[0]},{bgtol[1]}"))
 
 
 class platesolve(BaseCommand):
@@ -2247,45 +1198,6 @@ class platesolve(BaseCommand):
     Passing options **-blindpos** and/or **-blindres** enables to solve blindly for position and for resolution respectively. You can use these when solving an image with a completely unknown location and sampling
     """
 
-    # TODO: Add support for -order=, -radius=, -disto=, -nocrop, -blindpos, -blindres
-    # TODO: Fix to match original usage
-    def __init__(
-        self,
-        force_plate_solve: bool = False,
-        sequence_name: t.Optional[str] = None,
-        image_center: t.Optional[str] = None,
-        noflip: bool = False,
-        local_asnet: bool = False,
-        downscale: bool = False,
-        focal_length: t.Optional[float] = None,
-        pixel_size: t.Optional[float] = None,
-        limit_mag: magnitude_option = magnitude_option.DEFAULT_MAGNITUDE,
-        magnitude_value: float = 0.0,
-        catalog: star_catalog = None,
-    ):
-        super().__init__()
-        if sequence_name is not None:
-            self.append(CommandArgument(sequence_name))
-        self.append(CommandFlag("force", force_plate_solve))
-        if image_center is not None:
-            self.append(CommandArgument(image_center))
-        self.append(CommandFlag("noflip", noflip))
-        
-        self.append(CommandOption("focal", focal_length))
-        self.append(CommandOption("pixelsize", pixel_size))
-        if limit_mag == magnitude_option.MAGNITUDE_OFFSET and magnitude_value != 0.0:
-            if magnitude_value > 0.0:
-                self.append(CommandOption("limitmag", f"+{magnitude_value}"))
-            else:
-                self.append(CommandOption("limitmag", magnitude_value))
-        elif limit_mag == magnitude_option.ABSOLUTE_MAGNITUDE:
-            self.append(CommandOption("limitmag", magnitude_value))
-        if local_asnet and catalog is not None:
-            raise ValueError("catalog cannot be changed when using astrometry.net")
-        self.append(CommandOption("catalog", catalog))
-        self.append(CommandFlag("localasnet", local_asnet))
-        self.append(CommandFlag("downscale", downscale))
-
 
 class pm(BaseCommand):
     """
@@ -2296,18 +1208,6 @@ class pm(BaseCommand):
     This command evaluates the expression given in argument as in PixelMath tool. The full expression must be between double quotes and variables (that are image names, without extension, located in the working directory in that case) must be surrounded by the token $, e.g. "$image1$ \* 0.5 + $image2$ \* 0.5". A maximum of 10 images can be used in the expression.
     Image can be rescaled with the option **-rescale** followed by **low** and **high** values in the range [0, 1]. If no low and high values are provided, default values are set to 0 and 1. Another optional argument, **-nosum** tells Siril not to sum exposure times. This impacts FITS keywords such as LIVETIME and STACKCNT
     """
-
-    def __init__(
-        self,
-        expression: str,
-        rescale: t.Optional[t.Tuple[float, float]] = None,
-        nosum: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandArgument(expression))
-        if rescale is not None:
-            self.append(CommandOption("rescale", f"{rescale[0]} {rescale[1]}"))
-        self.append(CommandFlag("nosum", nosum))
 
 
 class profile(BaseCommand):
@@ -2329,45 +1229,6 @@ class profile(BaseCommand):
     The argument **"-title=\ My Title"** sets a custom title "My Title"
     """
 
-    def __init__(
-        self,
-        from_x: int,
-        from_y: int,
-        to_x: int,
-        to_y: int,
-        tri: bool = False,
-        cfa: bool = False,
-        arcsec: bool = False,
-        savedat: bool = False,
-        filename: t.Optional[str] = None,
-        layer: t.Optional[str] = None,
-        width: t.Optional[int] = None,
-        spacing: t.Optional[int] = None,
-        title: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandOption("from", f"{from_x},{from_y}"))
-        self.append(CommandOption("to", f"{to_x},{to_y}"))
-        if tri:
-            self.append(CommandFlag("tri", tri))
-        if cfa:
-            self.append(CommandFlag("cfa", cfa))
-        if arcsec:
-            self.append(CommandFlag("arcsec", arcsec))
-        # TODO: model with enum
-        if savedat:
-            self.append(CommandFlag("savedat", savedat))
-        if filename is not None:
-            self.append(CommandOption("filename", filename))
-        if layer is not None:
-            self.append(CommandOption("layer", layer))
-        if width is not None:
-            self.append(CommandOption("width", width))
-        if spacing is not None:
-            self.append(CommandOption("spacing", spacing))
-        if title is not None:
-            self.append(CommandOption("title", title))
-
 
 class psf(BaseCommand):
     """
@@ -2379,14 +1240,6 @@ class psf(BaseCommand):
     
     Links: :ref:`boxselect <boxselect>`
     """
-
-    def __init__(
-        self,
-        channel: t.Optional[str] = None,
-    ):
-        super().__init__()
-        if channel is not None:
-            self.append(CommandArgument(channel))
 
 
 class pwd(BaseCommand):
@@ -2409,17 +1262,6 @@ class pyscript(BaseCommand):
     
     The script name must be provided as the first argument. If it is not found in the current working directory, the user-defined script paths specified in Preferences and the local siril-scripts repository will be searched. All subsequent arguments will be treated as script arguments and passed to the script as its argument vector. Note that the specific script must incorporate support for reading input from the argument vector
     """
-
-    def __init__(
-        self,
-        script_name: str,
-        script_argv: t.Optional[t.List[str]] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(script_name))
-        if script_argv is not None:
-            for arg in script_argv:
-                self.append(CommandArgument(arg))
 
 
 class register(BaseCommand):
@@ -2464,35 +1306,6 @@ class register(BaseCommand):
     Links: :ref:`setfindstar <setfindstar>`, :ref:`psf <psf>`, :ref:`seqapplyreg <seqapplyreg>`
     """
 
-    def __init__(
-        self,
-        base_name: str,
-        no_out: bool = False,
-        two_pass: bool = False,
-        drizzle: bool = False,
-        selected: bool = False,
-        prefix: t.Optional[str] = None,
-        min_pairs: t.Optional[int] = None,
-        trans_func: t.Optional[registration_transformation] = None,
-        layer: t.Optional[int] = None,
-        max_stars: t.Optional[int] = None,
-        interp: t.Optional[pixel_interpolation] = None,
-    ):
-        super().__init__()
-        # TODO: Clean up to match usage
-        self.append(CommandArgument(base_name))
-        self.append(CommandFlag("noout", no_out))
-        self.append(CommandFlag("2pass", two_pass))
-        self.append(CommandFlag("drizzle", drizzle))
-        self.append(CommandFlag("selected", selected))
-        self.append(CommandOption("layer", layer))
-        self.append(CommandOption("minpairs", min_pairs))
-        self.append(CommandOption("maxstars", max_stars))
-        self.append(CommandOption("transf", trans_func))
-        if not no_out and not two_pass:
-            self.append(CommandOption("interp", interp))
-            self.append(CommandOption("prefix", prefix))
-
 
 class requires(BaseCommand):
     """
@@ -2504,11 +1317,6 @@ class requires(BaseCommand):
     
     Example: *requires 1.2.0 1.4.0* allows the script to run for all of the 1.2.x series and 1.3.x series, but will not run for any versions earlier than 1.2.0 or for version 1.4.0 or any later versions
     """
-
-    def __init__(self, version: str, obsolete_version: t.Optional[str] = None):
-        super().__init__()
-        self.append(CommandArgument(version))
-        self.append(CommandOption("obsolete_version", obsolete_version))
 
 
 class resample(BaseCommand):
@@ -2524,27 +1332,6 @@ class resample(BaseCommand):
     Clamping of the bicubic and lanczos4 interpolation methods is the default, to avoid artefacts, but can be disabled with the **-noclamp** argument
     """
 
-    def __init__(
-        self,
-        factor: t.Optional[float] = None,
-        target_width: t.Optional[int] = None,
-        target_height: t.Optional[int] = None,
-        max_dim: t.Optional[int] = None,
-        interp: t.Optional[pixel_interpolation] = None,
-        no_clamp: bool = False,
-    ):
-        super().__init__()
-        if factor is None and target_width is None and target_height is None and max_dim is None:
-            raise ValueError("Some indication about the size must be given")
-        if target_width is not None and target_height is not None:
-            raise ValueError("Only one indication about the target size can be given")
-        self.append(CommandArgument(factor))
-        self.append(CommandOption("width", target_width))
-        self.append(CommandOption("height", target_height))
-        self.append(CommandOption("maxdim", max_dim))
-        self.append(CommandOption("interp", interp))
-        self.append(CommandFlag("noclamp", no_clamp))
-
 
 class rgbcomp(BaseCommand):
     """
@@ -2555,32 +1342,6 @@ class rgbcomp(BaseCommand):
     
     Creates an RGB composition using three independent images, or an LRGB composition using the optional luminance image and three monochrome images or a color image. Result image is called composed_rgb.fit or composed_lrgb.fit unless another name is provided in the optional argument. Another optional argument, **-nosum** tells Siril not to sum exposure times. This impacts FITS keywords such as LIVETIME and STACKCNT
     """
-
-    def __init__(
-        self,
-        luminance: t.Optional[str] = None,
-        rgb_image: t.Optional[str] = None,
-        red_image: t.Optional[str] = None,
-        green_image: t.Optional[str] = None,
-        blue_image: t.Optional[str] = None,
-        out: t.Optional[str] = None,
-        no_sum: bool = False,
-    ):
-        super().__init__()
-        using_rgb_image = False
-        if luminance is not None:
-            self.append(CommandOption("lum", luminance))
-            if rgb_image is not None:
-                self.append(CommandArgument(rgb_image))
-                using_rgb_image = True
-        if not using_rgb_image:
-            if red_image is None or green_image is None or blue_image is None:
-                raise ValueError("The three input images are required for rgbcomp")
-            self.append(CommandArgument(red_image))
-            self.append(CommandArgument(green_image))
-            self.append(CommandArgument(blue_image))
-        self.append(CommandOption("out", out))
-        self.append(CommandFlag("nosum", no_sum))
 
 
 class rgradient(BaseCommand):
@@ -2593,13 +1354,6 @@ class rgradient(BaseCommand):
     
     Between these two images, the shifts have the same amplitude, but an opposite sign. The two images are then added to create the final image. This process is also called Larson Sekanina filter
     """
-
-    def __init__(self, xc: int, yc: int, dR: int, dalpha: int):
-        super().__init__()
-        self.append(CommandArgument(xc))
-        self.append(CommandArgument(yc))
-        self.append(CommandArgument(dR))
-        self.append(CommandArgument(dalpha))
 
 
 class rl(BaseCommand):
@@ -2623,27 +1377,6 @@ class rl(BaseCommand):
     Links: :ref:`psf <psf>`, :ref:`makepsf <makepsf>`
     """
 
-    def __init__(
-        self,
-        loadpsf: t.Optional[str] = None,
-        alpha: t.Optional[float] = None,
-        iters: t.Optional[int] = None,
-        stop: t.Optional[float] = None,
-        gdstep: t.Optional[float] = None,
-        tv: bool = False,
-        fh: bool = False,
-        mul: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandOption("loadpsf", loadpsf))
-        self.append(CommandOption("alpha", alpha))
-        self.append(CommandOption("iters", iters))
-        self.append(CommandOption("stop", stop))
-        self.append(CommandOption("gdstep", gdstep))
-        self.append(CommandFlag("tv", tv))
-        self.append(CommandFlag("fh", fh))
-        self.append(CommandFlag("mul", mul))
-
 
 class rmgreen(BaseCommand):
     """
@@ -2656,18 +1389,6 @@ class rmgreen(BaseCommand):
     
     **Type** can take values 0 for average neutral, 1 for maximum neutral, 2 for maximum mask, 3 for additive mask, defaulting to 0. The last two can take an **amount** argument, a value between 0 and 1, defaulting to 1
     """
-
-    def __init__(
-        self,
-        nopreserve: bool = False,
-        protection: t.Optional[rmgreen_protection] = None,
-        amount: t.Optional[float] = None,
-    ):
-        super().__init__()
-        self.append(CommandFlag("nopreserve", nopreserve))
-        self.append(CommandArgument(protection))
-        if protection in [rmgreen_protection.MAXIMUM_MASK, rmgreen_protection.ADDITIVE_MASK]:
-            self.append(CommandArgument(amount))
 
 
 class rotate(BaseCommand):
@@ -2683,19 +1404,6 @@ class rotate(BaseCommand):
     The pixel interpolation method can be specified with the **-interp=** argument followed by one of the methods in the list **no**\ [ne], **ne**\ [arest], **cu**\ [bic], **la**\ [nczos4], **li**\ [near], **ar**\ [ea]}. If **none** is passed, the transformation is forced to shift and a pixel-wise shift is applied to each image without any interpolation.
     Clamping of the bicubic and lanczos4 interpolation methods is the default, to avoid artefacts, but can be disabled with the **-noclamp** argument
     """
-
-    def __init__(
-        self,
-        degree: int,
-        nocrop: bool = False,
-        interp: t.Optional[pixel_interpolation] = None,
-        noclamp: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandArgument(degree))
-        self.append(CommandFlag("nocrop", nocrop))
-        self.append(CommandOption("interp", interp))
-        self.append(CommandFlag("noclamp", noclamp))
 
 
 class rotatePi(BaseCommand):
@@ -2722,18 +1430,6 @@ class satu(BaseCommand):
     **hue_range_index** can be [0, 6], meaning: 0 for pink to orange, 1 for orange to yellow, 2 for yellow to cyan, 3 for cyan, 4 for cyan to magenta, 5 for magenta to pink, 6 for all (default)
     """
 
-    def __init__(
-        self,
-        amount: float,
-        background_factor: t.Optional[float] = None,
-        hue_range_index: t.Optional[int] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(amount))
-        self.append(CommandArgument(background_factor))
-        if background_factor is not None:
-            self.append(CommandArgument(hue_range_index))
-
 
 class save(BaseCommand):
     """
@@ -2746,10 +1442,6 @@ class save(BaseCommand):
     Links: :ref:`setext <setext>`
     """
 
-    def __init__(self, filename: str, chksum: bool = False):
-        super().__init__()
-        self.append(CommandArgument(filename))
-        self.append(CommandFlag("chksum", chksum))
 
 class savebmp(BaseCommand):
     """
@@ -2760,9 +1452,6 @@ class savebmp(BaseCommand):
     Saves current image under the form of a bitmap file with 8-bit per channel: **filename**.bmp (BMP 24-bit)
     """
 
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
 
 class savejpg(BaseCommand):
     """
@@ -2774,11 +1463,6 @@ class savejpg(BaseCommand):
     
     The compression quality can be adjusted using the optional **quality** value, 100 being the best and default, while a lower value increases the compression ratio
     """
-
-    def __init__(self, filename: str, quality: t.Optional[int] = None):
-        super().__init__()
-        self.append(CommandArgument(filename))
-        self.append(CommandOptional(quality))
 
 
 class savejxl(BaseCommand):
@@ -2792,13 +1476,6 @@ class savejxl(BaseCommand):
     All other arguments are optional. The quality setting expresses a maximum permissible distance between the original and the compressed image: the **-quality=** argument may be provided and must be specified as a floating point number between 0.0 and 10.0. A higher quality means better quality, but larger file size. Quality = 10.0 is mathematically lossless, quality = 9.0 is visually lossless and quality = 0 is visually poor but gives very small file sizes. The default value is 9.0; typical values range from 7.0 to 10.0. The compression effort can be adjusted using the optional **-effort=** value, 9 being the most effort but very slow, while a lower value increases the compression ratio. Values above 7 are not recommended as they can be very slow and produce little if any benefit to file size, in fact sometimes effort = 9 can produce larger files. If this argument is omitted the default value of 7 is used. An option **-8bit** may be provided to force output to be 8 bits per pixel
     """
 
-    def __init__(self, filename: str, effort: t.Optional[int] = None, quality: t.Optional[float] = None, bit_8: bool = False):
-        super().__init__()
-        self.append(CommandArgument(filename))
-        self.append(CommandOptional(effort))
-        self.append(CommandOptional(quality))
-        self.append(CommandFlag("bit_8", bit_8))
-
 
 class savepng(BaseCommand):
     """
@@ -2808,10 +1485,6 @@ class savepng(BaseCommand):
     
     Saves current image into a PNG file: **filename**.png, with 16 bits per channel if the loaded image is 16 or 32 bits, and 8 bits per channel if the loaded image is 8 bits
     """
-
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
 
 
 class savepnm(BaseCommand):
@@ -2825,10 +1498,6 @@ class savepnm(BaseCommand):
     The extension of the output will be **filename**.ppm for RGB image and **filename**.pgm for gray-level image
     """
 
-    def __init__(self, filename: str):
-        super().__init__()
-        self.append(CommandArgument(filename))
-
 
 class savetif(BaseCommand):
     """
@@ -2840,13 +1509,6 @@ class savetif(BaseCommand):
     
     See also SAVETIF32 and SAVETIF8
     """
-
-    def __init__(self, filename: str, astro: bool = False, deflate: bool = False):
-        super().__init__()
-        self.append(CommandArgument(filename))
-        self.append(CommandFlag("astro", astro))
-        self.append(CommandFlag("deflate", deflate))
-
 
 
 class savetif32(BaseCommand):
@@ -2860,12 +1522,6 @@ class savetif32(BaseCommand):
     Links: :ref:`savetif <savetif>`
     """
 
-    def __init__(self, filename: str, astro: bool = False, deflate: bool = False):
-        super().__init__()
-        self.append(CommandArgument(filename))
-        self.append(CommandFlag("astro", astro))
-        self.append(CommandFlag("deflate", deflate))
-
 
 class savetif8(BaseCommand):
     """
@@ -2878,11 +1534,6 @@ class savetif8(BaseCommand):
     Links: :ref:`savetif <savetif>`
     """
 
-    def __init__(self, filename: str, astro: bool = False, deflate: bool = False):
-        super().__init__()
-        self.append(CommandArgument(filename))
-        self.append(CommandFlag("astro", astro))
-        self.append(CommandFlag("deflate", deflate))
 
 class sb(BaseCommand):
     """
@@ -2900,12 +1551,6 @@ class sb(BaseCommand):
     
     Links: :ref:`psf <psf>`
     """
-
-    def __init__(self, loadpsf: t.Optional[str] = None, alpha: t.Optional[float] = None, iters: t.Optional[int] = None):
-        super().__init__()
-        self.append(CommandOptional(loadpsf))
-        self.append(CommandOptional(alpha))
-        self.append(CommandOptional(iters))
 
 
 class select(BaseCommand):
@@ -2929,12 +1574,6 @@ class select(BaseCommand):
     
     The second number can be greater than the number of images to just go up to the end.
     """
-
-    def __init__(self, sequencename: str, from_: int, to: int):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandArgument(from_))
-        self.append(CommandArgument(to))
 
 
 class seqapplyreg(BaseCommand):
@@ -2987,29 +1626,6 @@ class seqapplyreg(BaseCommand):
     It is also possible to use manually selected images, either previously from the GUI or with the select or unselect commands, using the **-filter-included** argument.
     """
 
-    def __init__(
-        self,
-        base_name: str,
-        drizzle: bool = False,
-        layer: t.Optional[int] = None,
-        prefix: t.Optional[str] = None,
-        interp: t.Optional[pixel_interpolation] = None,
-        filters: t.Optional[t.List[sequence_filter_with_value]] = None,
-        filter_included: bool = False,
-        framing: t.Optional[sequence_framing] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(base_name))
-        self.append(CommandFlag("drizzle", drizzle))
-        self.append(CommandOption("layer", layer))
-        self.append(CommandOption("prefix", prefix))
-        self.append(CommandOption("interp", interp))
-        self.append(CommandOption("framing", framing))
-        if filters is not None:
-            for f in filters:
-                self.append(CommandOption(f.filter_type.value, f.value_str()))
-        self.append(CommandFlag("filter-incl", filter_included))
-
 
 class seqccm(BaseCommand):
     """
@@ -3024,11 +1640,6 @@ class seqccm(BaseCommand):
     Links: :ref:`ccm <ccm>`
     """
 
-    def __init__(self, sequencename: str, prefix: t.Optional[str] = None):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandOptional(prefix))
-
 
 class seqclean(BaseCommand):
     """
@@ -3041,12 +1652,6 @@ class seqclean(BaseCommand):
     You can specify to clear only registration, statistics and/or selection with **-reg**, **-stat** and **-sel** options respectively. All are cleared if no option is passed
     """
 
-    def __init__(self, sequencename: str, reg: bool = False, stat: bool = False, sel: bool = False):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandFlag("reg", reg))
-        self.append(CommandFlag("stat", stat))
-        self.append(CommandFlag("sel", sel))
 
 class seqcosme(BaseCommand):
     """
@@ -3060,12 +1665,6 @@ class seqcosme(BaseCommand):
     
     Links: :ref:`cosme <cosme>`
     """
-
-    def __init__(self, sequencename: str, filename: t.Optional[str] = None, prefix: t.Optional[str] = None):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandOptional(filename))
-        self.append(CommandOptional(prefix))
 
 
 class seqcosme_cfa(BaseCommand):
@@ -3081,11 +1680,6 @@ class seqcosme_cfa(BaseCommand):
     Links: :ref:`cosme_cfa <cosme_cfa>`
     """
 
-    def __init__(self, sequencename: str, filename: t.Optional[str] = None, prefix: t.Optional[str] = None):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandOptional(filename))
-        self.append(CommandOptional(prefix))
 
 class seqcrop(BaseCommand):
     """
@@ -3101,13 +1695,6 @@ class seqcrop(BaseCommand):
     Links: :ref:`crop <crop>`
     """
 
-    def __init__(self, seq: str, x, y, width, height, prefix: t.Optional[str] = None):
-        super().__init__()
-        self.append(CommandArgument(seq))
-        self.append(CommandArgument(f"{x} {y} {width} {height}"))
-        self.append(CommandOption("prefix", prefix))
-
-
 
 class seqextract_Green(BaseCommand):
     """
@@ -3119,11 +1706,6 @@ class seqextract_Green(BaseCommand):
     
     The output sequence name starts with the prefix "Green\_" unless otherwise specified with option **-prefix=**
     """
-
-    def __init__(self, sequencename: str, prefix: t.Optional[str] = None):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandOptional(prefix))
 
 
 class seqextract_Ha(BaseCommand):
@@ -3137,11 +1719,6 @@ class seqextract_Ha(BaseCommand):
     The output sequence name starts with the prefix "Ha\_" unless otherwise specified with option **-prefix=**
     """
 
-    def __init__(self, sequencename: str, prefix: t.Optional[str] = None, upscale: t.Optional[bool] = None):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandOptional(prefix))
-        self.append(CommandOptional(upscale))
 
 class seqextract_HaOIII(BaseCommand):
     """
@@ -3153,12 +1730,6 @@ class seqextract_HaOIII(BaseCommand):
     
     The output sequences names start with the prefixes "Ha\_" and "OIII\_"
     """
-
-    def __init__(self, sequencename: str, resample: t.Optional[str] = None):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandOptional(resample))
-
 
 
 class seqfind_cosme(BaseCommand):
@@ -3174,19 +1745,6 @@ class seqfind_cosme(BaseCommand):
     Links: :ref:`find_cosme <find_cosme>`
     """
 
-    def __init__(
-        self,
-        sequence: str,
-        sigma_low: float,
-        sigma_high: float,
-        prefix: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(sigma_low))
-        self.append(CommandArgument(sigma_high))
-        self.append(CommandOption("prefix", prefix))
-
 
 class seqfind_cosme_cfa(BaseCommand):
     """
@@ -3200,19 +1758,6 @@ class seqfind_cosme_cfa(BaseCommand):
     
     Links: :ref:`find_cosme_cfa <find_cosme_cfa>`
     """
-
-    def __init__(
-        self,
-        sequence: str,
-        sigma_low: float,
-        sigma_high: float,
-        prefix: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(sigma_low))
-        self.append(CommandArgument(sigma_high))
-        self.append(CommandOption("prefix", prefix))
 
 
 class seqfindstar(BaseCommand):
@@ -3228,12 +1773,6 @@ class seqfindstar(BaseCommand):
     Links: :ref:`findstar <findstar>`
     """
 
-    def __init__(self, sequence: str, layer: t.Optional[int] = None, max_stars: t.Optional[int] = None):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandOption("layer", layer))
-        self.append(CommandOption("maxstars", max_stars))
-
 
 class seqfixbanding(BaseCommand):
     """
@@ -3248,14 +1787,6 @@ class seqfixbanding(BaseCommand):
     Links: :ref:`fixbanding <fixbanding>`
     """
 
-    def __init__(self, sequence: str, amount: float, sigma: float, prefix: t.Optional[str] = None, vertical: t.Optional[bool] = None):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(amount))
-        self.append(CommandArgument(sigma))
-        self.append(CommandOption("prefix", prefix))
-        self.append(CommandOption("vertical", vertical))
-
 
 class seqght(BaseCommand):
     """
@@ -3267,38 +1798,6 @@ class seqght(BaseCommand):
     
     Links: :ref:`ght <ght>`
     """
-
-    def __init__(
-        self, 
-        sequence: str, 
-        D: float, 
-        B: float, 
-        LP: float, 
-        SP: float, 
-        HP: float, 
-        clipmode: t.Optional[str] = None, 
-        human: t.Optional[bool] = None, 
-        even: t.Optional[bool] = None, 
-        independent: t.Optional[bool] = None, 
-        sat: t.Optional[bool] = None, 
-        channels: t.Optional[str] = None, 
-        prefix: t.Optional[str] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(D))
-        self.append(CommandArgument(B))
-        self.append(CommandArgument(LP))
-        self.append(CommandArgument(SP))
-        self.append(CommandArgument(HP))
-        self.append(CommandOption("clipmode", clipmode))
-        # TODO: make these an enum like GHT
-        self.append(CommandOption("human", human))
-        self.append(CommandOption("even", even))
-        self.append(CommandOption("independent", independent))
-        self.append(CommandOption("sat", sat))
-        self.append(CommandOption("channels", channels))
-        self.append(CommandOption("prefix", prefix))
 
 
 class seqgraxpert_bg(BaseCommand):
@@ -3312,37 +1811,6 @@ class seqgraxpert_bg(BaseCommand):
     Links: :ref:`graxpert_bg <graxpert_bg>`
     """
 
-    def __init__(
-        self, 
-        sequence: str, 
-        algo: t.Optional[str] = None, 
-        mode: t.Optional[str] = None, 
-        kernel: t.Optional[str] = None, 
-        ai_batch_size: t.Optional[str] = None, 
-        pts_per_row: t.Optional[str] = None, 
-        splineorder: t.Optional[str] = None, 
-        samplesize: t.Optional[str] = None, 
-        smoothing: t.Optional[str] = None, 
-        bgtol: t.Optional[str] = None, 
-        gpu: t.Optional[bool] = None, 
-        cpu: t.Optional[bool] = None, 
-        keep_bg: t.Optional[bool] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandOption("algo", algo))
-        self.append(CommandOption("mode", mode))
-        self.append(CommandOption("kernel", kernel))
-        self.append(CommandOption("ai_batch_size", ai_batch_size))
-        self.append(CommandOption("pts_per_row", pts_per_row))
-        self.append(CommandOption("splineorder", splineorder))
-        self.append(CommandOption("samplesize", samplesize))
-        self.append(CommandOption("smoothing", smoothing))
-        self.append(CommandOption("bgtol", bgtol))
-        self.append(CommandOption("gpu", gpu))
-        self.append(CommandOption("cpu", cpu))
-        self.append(CommandOption("keep_bg", keep_bg))
-
 
 class seqgraxpert_denoise(BaseCommand):
     """
@@ -3355,19 +1823,6 @@ class seqgraxpert_denoise(BaseCommand):
     Links: :ref:`graxpert_denoise <graxpert_denoise>`
     """
 
-    def __init__(
-        self, 
-        sequence: str, 
-        strength: t.Optional[str] = None, 
-        gpu: t.Optional[bool] = None, 
-        cpu: t.Optional[bool] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandOption("strength", strength))
-        # TODO: make this an enum
-        self.append(CommandOption("gpu", gpu))
-        self.append(CommandOption("cpu", cpu))
 
 class seqheader(BaseCommand):
     """
@@ -3377,19 +1832,6 @@ class seqheader(BaseCommand):
     
     Prints the FITS header value corresponding to the given keys for all images in the sequence. You can write several keys in a row, separated by a space. The **-out=** option, followed by a file name, allows you to print the output in a csv file. The **-sel** option limits the output to the images selected in the sequence
     """
-
-    def __init__(
-        self, 
-        sequence: str, 
-        keywords: t.List[str], 
-        sel: t.Optional[bool] = None, 
-        out: t.Optional[str] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(keywords))
-        self.append(CommandOption("sel", sel))
-        self.append(CommandOption("out", out))
 
 
 class seqinvght(BaseCommand):
@@ -3403,38 +1845,6 @@ class seqinvght(BaseCommand):
     Links: :ref:`invght <invght>`
     """
 
-    def __init__(
-        self, 
-        sequence: str, 
-        D: float, 
-        B: float, 
-        LP: float, 
-        SP: float, 
-        HP: float, 
-        clipmode: t.Optional[str] = None, 
-        human: t.Optional[bool] = None, 
-        even: t.Optional[bool] = None, 
-        independent: t.Optional[bool] = None, 
-        sat: t.Optional[bool] = None, 
-        channels: t.Optional[str] = None, 
-        prefix: t.Optional[str] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(D))
-        self.append(CommandArgument(B))
-        self.append(CommandArgument(LP))
-        self.append(CommandArgument(SP))
-        self.append(CommandArgument(HP))
-        self.append(CommandOption("clipmode", clipmode))
-        # TODO: make this an enum
-        self.append(CommandOption("human", human))
-        self.append(CommandOption("even", even))
-        self.append(CommandOption("independent", independent))
-        self.append(CommandOption("sat", sat))
-        self.append(CommandOption("channels", channels))
-        self.append(CommandOption("prefix", prefix))
-
 
 class seqinvmodasinh(BaseCommand):
     """
@@ -3447,36 +1857,6 @@ class seqinvmodasinh(BaseCommand):
     Links: :ref:`invmodasinh <invmodasinh>`
     """
 
-    def __init__(
-        self, 
-        sequence: str, 
-        D: float, 
-        LP: float, 
-        SP: float, 
-        HP: float, 
-        clipmode: t.Optional[str] = None, 
-        human: t.Optional[bool] = None, 
-        even: t.Optional[bool] = None, 
-        independent: t.Optional[bool] = None, 
-        sat: t.Optional[bool] = None, 
-        channels: t.Optional[str] = None, 
-        prefix: t.Optional[str] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(D))
-        self.append(CommandArgument(LP))
-        self.append(CommandArgument(SP))
-        self.append(CommandArgument(HP))
-        self.append(CommandOption("clipmode", clipmode))
-        # TODO: make this an enum
-        self.append(CommandOption("human", human))
-        self.append(CommandOption("even", even))
-        self.append(CommandOption("independent", independent))
-        self.append(CommandOption("sat", sat))
-        self.append(CommandOption("channels", channels))
-        self.append(CommandOption("prefix", prefix))
-
 
 class seqlinstretch(BaseCommand):
     """
@@ -3488,22 +1868,6 @@ class seqlinstretch(BaseCommand):
     
     Links: :ref:`linstretch <linstretch>`
     """
-
-    def __init__(
-        self, 
-        sequence: str, 
-        BP: float, 
-        channels: t.Optional[str] = None, 
-        sat: t.Optional[bool] = None, 
-        prefix: t.Optional[str] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(BP))
-        # TODO: make this an enum
-        self.append(CommandOption("channels", channels))
-        self.append(CommandOption("sat", sat))
-        self.append(CommandOption("prefix", prefix))
 
 
 class seqmerge_cfa(BaseCommand):
@@ -3521,23 +1885,6 @@ class seqmerge_cfa(BaseCommand):
     The output sequence name starts with the prefix "mCFA\_" and a number unless otherwise specified with **-prefixout=** option
     """
 
-    def __init__(
-        self, 
-        sequencename0: str, 
-        sequencename1: str, 
-        sequencename2: str, 
-        sequencename3: str, 
-        bayerpattern: str, 
-        prefixout: t.Optional[str] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequencename0))
-        self.append(CommandArgument(sequencename1))
-        self.append(CommandArgument(sequencename2))
-        self.append(CommandArgument(sequencename3))
-        self.append(CommandArgument(bayerpattern))
-        self.append(CommandOption("prefixout", prefixout))
-
 
 class seqmodasinh(BaseCommand):
     """
@@ -3549,36 +1896,6 @@ class seqmodasinh(BaseCommand):
     
     Links: :ref:`modasinh <modasinh>`
     """
-
-    def __init__(
-        self, 
-        sequence: str, 
-        D: float, 
-        LP: float, 
-        SP: float, 
-        HP: float, 
-        clipmode: t.Optional[str] = None, 
-        human: t.Optional[bool] = None, 
-        even: t.Optional[bool] = None, 
-        independent: t.Optional[bool] = None, 
-        sat: t.Optional[bool] = None, 
-        channels: t.Optional[str] = None, 
-        prefix: t.Optional[str] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(D))
-        self.append(CommandArgument(LP))
-        self.append(CommandArgument(SP))
-        self.append(CommandArgument(HP))
-        self.append(CommandOption("clipmode", clipmode))
-        # TODO: make this an enum
-        self.append(CommandOption("human", human))
-        self.append(CommandOption("even", even))
-        self.append(CommandOption("independent", independent))
-        self.append(CommandOption("sat", sat))
-        self.append(CommandOption("channels", channels))
-        self.append(CommandOption("prefix", prefix))
 
 
 class seqmtf(BaseCommand):
@@ -3594,23 +1911,6 @@ class seqmtf(BaseCommand):
     Links: :ref:`mtf <mtf>`
     """
 
-    def __init__(
-        self, 
-        sequencename: str, 
-        low: float, 
-        mid: float, 
-        high: float, 
-        channels: t.Optional[str] = None, 
-        prefix: t.Optional[str] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandArgument(low))
-        self.append(CommandArgument(mid))
-        self.append(CommandArgument(high))
-        self.append(CommandOption("channels", channels))
-        self.append(CommandOption("prefix", prefix))
-
 
 class seqprofile(BaseCommand):
     """
@@ -3621,55 +1921,6 @@ class seqprofile(BaseCommand):
     Generates an intensity profile plot between 2 points in each image in the sequence. After the mandatory first argument stating the sequence to process, the other arguments are the same as for the **profile** command. If processing a sequence and it is desired to have the current image number and total number of images displayed in the format "My Sequence (1 / 5)", the given title should end with () (e.g. "My Sequence ()" and the numbers will be populated automatically)
     """
 
-    def __init__(
-        self, 
-        sequence: str, 
-        from_: t.Tuple[int, int], 
-        to: t.Tuple[int, int], 
-        tri: t.Optional[bool] = None, 
-        cfa: t.Optional[bool] = None, 
-        arcsec: t.Optional[bool] = None, 
-        savedat: t.Optional[bool] = None, 
-        layer: t.Optional[str] = None, 
-        width: t.Optional[int] = None, 
-        spacing: t.Optional[int] = None, 
-        xaxis: t.Optional[str] = None, 
-        wavenumber1: t.Optional[int] = None, 
-        wn1at: t.Optional[t.Tuple[int, int]] = None, 
-        wavenumber2: t.Optional[int] = None, 
-        wn2at: t.Optional[t.Tuple[int, int]] = None, 
-        title: t.Optional[str] = None
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandOption("from", f"{from_[0]},{from_[1]}"))
-        self.append(CommandOption("to", f"{to[0]},{to[1]}"))
-        if tri:
-            self.append(CommandFlag("tri", tri))
-        if cfa:
-            self.append(CommandFlag("cfa", cfa))
-        if arcsec:
-            self.append(CommandFlag("arcsec", arcsec))
-        if savedat:
-            self.append(CommandFlag("savedat", savedat))
-        if layer is not None:
-            self.append(CommandOption("layer", layer))
-        if width is not None:
-            self.append(CommandOption("width", width))
-        if spacing is not None:
-            self.append(CommandOption("spacing", spacing))
-        if xaxis is not None:
-            self.append(CommandOption("xaxis", xaxis))
-        if wavenumber1 is not None:
-            self.append(CommandOption("wavenumber1", wavenumber1))
-        if wn1at is not None:
-            self.append(CommandOption("wn1at", f"{wn1at[0]},{wn1at[1]}"))
-        if wavenumber2 is not None:
-            self.append(CommandOption("wavenumber2", wavenumber2))
-        if wn2at is not None:
-            self.append(CommandOption("wn2at", f"{wn2at[0]},{wn2at[1]}"))
-        if title is not None:
-            self.append(CommandOption("title", title))
 
 class seqpsf(BaseCommand):
     """
@@ -3689,21 +1940,6 @@ class seqpsf(BaseCommand):
     
     Links: :ref:`psf <psf>`, :ref:`light_curve <light_curve>`
     """
-
-    def __init__(
-        self,
-        sequence: str,
-        channel: t.Optional[int] = None,
-        at: t.Optional[t.Tuple[int, int]] = None,
-        wcs: t.Optional[t.Tuple[float, float]] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(channel))
-        if at is not None:
-            self.append(CommandOption("at", f"{at[0]},{at[1]}"))
-        if wcs is not None:
-            self.append(CommandOption("wcs", f"{wcs[0]},{wcs[1]}"))
 
 
 class seqplatesolve(BaseCommand):
@@ -3739,41 +1975,6 @@ class seqplatesolve(BaseCommand):
     Passing options **-blindpos** and/or **-blindres** enables to solve blindly for position and for resolution respectively. You can use these when solving an image with a completely unknown location and sampling
     """
 
-    # TODO: implement all options
-    def __init__(
-        self,
-        sequence: str,
-        image_center: t.Optional[str] = None,
-        noflip: bool = False,
-        force_plate_solve: bool = False,
-        local_asnet: bool = False,
-        downscale: bool = False,
-        focal_length: t.Optional[float] = None,
-        pixel_size: t.Optional[float] = None,
-        limit_mag: magnitude_option = magnitude_option.DEFAULT_MAGNITUDE,
-        magnitude_value: float = 0.0,
-        catalog: star_catalog = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(image_center))
-        self.append(CommandFlag("noflip", noflip))
-        self.append(CommandFlag("platesolve", force_plate_solve))
-        self.append(CommandOption("focal", focal_length))
-        self.append(CommandOption("pixelsize", pixel_size))
-        if limit_mag == magnitude_option.MAGNITUDE_OFFSET and magnitude_value != 0.0:
-            if magnitude_value > 0.0:
-                self.append(CommandOption("limitmag", f"+{magnitude_value}"))
-            else:
-                self.append(CommandOption("limitmag", magnitude_value))
-        elif limit_mag == magnitude_option.ABSOLUTE_MAGNITUDE:
-            self.append(CommandOption("limitmag", magnitude_value))
-        if local_asnet and catalog is not None:
-            raise ValueError("catalog cannot be changed when using astrometry.net")
-        self.append(CommandOption("catalog", catalog))
-        self.append(CommandFlag("localasnet", local_asnet))
-        self.append(CommandFlag("downscale", downscale))
-
 
 class seqresample(BaseCommand):
     """
@@ -3790,23 +1991,6 @@ class seqresample(BaseCommand):
     The output sequence name starts with the prefix "scaled\_" unless otherwise specified with **-prefix=** option
     """
 
-    def __init__(
-        self,
-        sequence: str,
-        scale: t.Optional[float] = None,
-        width: t.Optional[int] = None,
-        height: t.Optional[int] = None,
-        interpolation: t.Optional[str] = None,
-        prefix: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandOption("scale", scale))
-        self.append(CommandOption("width", width))
-        self.append(CommandOption("height", height))
-        self.append(CommandOption("interp", interpolation))
-        self.append(CommandOption("prefix", prefix))
-
 
 class seqrl(BaseCommand):
     """
@@ -3819,29 +2003,6 @@ class seqrl(BaseCommand):
     Links: :ref:`rl <rl>`
     """
 
-    def __init__(
-        self,
-        sequence: str,
-        load_psf: t.Optional[str] = None,
-        alpha: t.Optional[float] = None,
-        iters: t.Optional[int] = None,
-        stop: t.Optional[float] = None,
-        gdstep: t.Optional[float] = None,
-        tv: bool = False,
-        fh: bool = False,
-        mul: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandOption("loadpsf", load_psf))
-        self.append(CommandOption("alpha", alpha))
-        self.append(CommandOption("iters", iters))
-        self.append(CommandOption("stop", stop))
-        self.append(CommandOption("gdstep", gdstep))
-        self.append(CommandFlag("tv", tv))
-        self.append(CommandFlag("fh", fh))
-        self.append(CommandFlag("mul", mul))
-
 
 class seqsb(BaseCommand):
     """
@@ -3853,19 +2014,6 @@ class seqsb(BaseCommand):
     
     Links: :ref:`sb <sb>`
     """
-
-    def __init__(
-        self,
-        sequence: str,
-        load_psf: t.Optional[str] = None,
-        alpha: t.Optional[float] = None,
-        iters: t.Optional[int] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandOption("loadpsf", load_psf))
-        self.append(CommandOption("alpha", alpha))
-        self.append(CommandOption("iters", iters))
 
 
 class seqsplit_cfa(BaseCommand):
@@ -3882,15 +2030,6 @@ class seqsplit_cfa(BaseCommand):
     Links: :ref:`split_cfa <split_cfa>`
     """
 
-    def __init__(
-        self,
-        sequence: str,
-        prefix: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandOption("prefix", prefix))
-
 
 class seqstarnet(BaseCommand):
     """
@@ -3903,20 +2042,6 @@ class seqstarnet(BaseCommand):
     Links: :ref:`starnet <starnet>`
     """
 
-    def __init__(
-        self,
-        sequence: str,
-        stretch: bool = False,
-        upscale: bool = False,
-        stride: t.Optional[int] = None,
-       nostarmask: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandFlag("stretch", stretch))
-        self.append(CommandFlag("upscale", upscale))
-        self.append(CommandOption("stride", stride))
-        self.append(CommandFlag("nostarmask", nostarmask))
 
 class seqstat(BaseCommand):
     """
@@ -3936,19 +2061,6 @@ class seqstat(BaseCommand):
     
     Links: :ref:`stat <stat>`
     """
-    
-    def __init__(
-        self,
-        sequence: str,
-        output_file: str,
-        option: t.Optional[str] = None,
-        cfa: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(output_file))
-        self.append(CommandOption("option", option))
-        self.append(CommandFlag("cfa", cfa))
 
 
 class seqsubsky(BaseCommand):
@@ -3965,22 +2077,6 @@ class seqsubsky(BaseCommand):
     Links: :ref:`subsky <subsky>`
     """
 
-    def __init__(
-        self,
-        base_name: str,
-        samples: t.Optional[int] = None,
-        tolerance: t.Optional[float] = None,
-        prefix: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(base_name))
-        # polynomial version with degree 1 should always be used in sequence processing
-        # TODO: implement all the options
-        self.append(CommandArgument("1"))
-        self.append(CommandOption("samples", samples))
-        self.append(CommandOption("tolerance", tolerance))
-        self.append(CommandOption("prefix", prefix))
-
 
 class seqtilt(BaseCommand):
     """
@@ -3992,13 +2088,6 @@ class seqtilt(BaseCommand):
     
     Links: :ref:`tilt <tilt>`
     """
-
-    def __init__(
-        self,
-        sequence: str,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
 
 
 class sequpdate_key(BaseCommand):
@@ -4015,18 +2104,6 @@ class sequpdate_key(BaseCommand):
     Links: :ref:`update_key <update_key>`
     """
 
-    def __init__(
-        self,
-        sequence: str,
-        key: str,
-        value: t.Optional[str] = None,
-        keycomment: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(key))
-        self.append(CommandArgument(value))
-        self.append(CommandOption("keycomment", keycomment))
 
 class seqwiener(BaseCommand):
     """
@@ -4038,17 +2115,6 @@ class seqwiener(BaseCommand):
     
     Links: :ref:`wiener <wiener>`
     """
-
-    def __init__(
-        self,
-        sequence: str,
-        load_psf: t.Optional[str] = None,
-        alpha: t.Optional[float] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandOption("loadpsf", load_psf))
-        self.append(CommandOption("alpha", alpha))
 
 
 class set(BaseCommand):
@@ -4062,17 +2128,6 @@ class set(BaseCommand):
     
     Links: :ref:`get <get>`
     """
-
-    def __init__(
-        self,
-        import_file: t.Optional[str] = None,
-        variable_value: t.Optional[t.Tuple[str, str]] = None,
-    ):
-        super().__init__()
-        if import_file is not None:
-            self.append(CommandOption("import", import_file))
-        if variable_value is not None:
-            self.append(CommandArgument(f"{variable_value[0]}={variable_value[1]}"))
 
 
 class set16bits(BaseCommand):
@@ -4110,20 +2165,6 @@ class setcompress(BaseCommand):
     For example, "setcompress 1 -type=rice 16" sets the rice compression with a quantization of 16
     """
 
-    def __init__(
-        self,
-        enable: bool,
-        _type: t.Optional[compression_type] = None,
-        quantization: t.Optional[int] = None,
-    ):
-        super().__init__()
-        if enable:
-            self.append(CommandArgument("1"))
-            self.append(CommandOption("type", _type))
-            self.append(CommandArgument(quantization))
-        else:
-            self.append(CommandArgument("0"))
-
 
 class setcpu(BaseCommand):
     """
@@ -4138,10 +2179,6 @@ class setcpu(BaseCommand):
     Links: :ref:`setmem <setmem>`
     """
 
-    def __init__(self, count: int):
-        super().__init__()
-        self.append(CommandArgument(count))
-
 
 class setext(BaseCommand):
     """
@@ -4153,10 +2190,6 @@ class setext(BaseCommand):
     
     The argument **extension** can be "fit", "fts" or "fits"
     """
-
-    def __init__(self, extension: fits_extension):
-        super().__init__()
-        self.append(CommandArgument(extension))
 
 
 class setfindstar(BaseCommand):
@@ -4198,56 +2231,6 @@ class setfindstar(BaseCommand):
     able to detect several tens of stars in each image.
     """
 
-    def __init__(
-        self,
-        reset: bool = None,
-        radius: float = None,
-        sigma: float = None,
-        roundness: float = None,
-        focal: float = None,
-        pixsize: float = None,
-        convergence: int = None,
-        gaussian: bool = False,
-        moffat: bool = False,
-        min_beta: float = None,
-        relax: bool = None,
-        minA: float = None,
-        maxA: float = None,
-    ):
-        super().__init__()
-        if reset is not None and reset:
-            self.append(CommandArgument("reset"))
-        self.append(CommandOption("radius", radius))
-        self.append(CommandOption("sigma", sigma))
-        if roundness is not None and (roundness < 0 or roundness >= 1):
-            raise ValueError("roundness can be between 0 and 0.95")
-        self.append(CommandOption("roundness", roundness))
-        self.append(CommandOption("focal", focal))
-        self.append(CommandOption("pixelsize", pixsize))
-        if convergence is not None and (convergence < 1 or convergence > 3):
-            raise ValueError("convergence can only have a value between 1 and 3")
-        self.append(CommandOption("convergence", convergence))
-        if moffat and gaussian:
-            raise ValueError("only one of Moffat or Gaussian model can be used")
-        self.append(CommandFlag("moffat", moffat))
-        self.append(CommandFlag("gaussian", gaussian))
-        if min_beta is not None and not moffat:
-            raise ValueError("min_beta is only for the Moffat profile")
-        self.append(CommandOption("minbeta", min_beta))
-        if relax is not None:
-            if relax:
-                self.append(CommandOption("relax", "yes"))
-            else:
-                self.append(CommandOption("relax", "no"))
-        self.append(CommandOption("minA", minA))
-        self.append(CommandOption("maxA", maxA))
-
-
-
-
-
-
-
 
 class setmem(BaseCommand):
     """
@@ -4261,10 +2244,6 @@ class setmem(BaseCommand):
     
     Links: :ref:`set <set>`
     """
-
-    def __init__(self, ratio: float):
-        super().__init__()
-        self.append(CommandArgument(ratio))
 
 
 class setphot(BaseCommand):
@@ -4283,25 +2262,6 @@ class setphot(BaseCommand):
     Links: :ref:`seqpsf <seqpsf>`
     """
 
-    def __init__(
-        self,
-        inner: t.Optional[int] = None,
-        outer: t.Optional[int] = None,
-        aperture: t.Optional[int] = None,
-        dyn_ratio: t.Optional[float] = None,
-        gain: t.Optional[float] = None,
-        min_val: t.Optional[int] = None,
-        max_val: t.Optional[int] = None,
-    ):
-        super().__init__()
-        self.append(CommandOption("inner", inner))
-        self.append(CommandOption("outer", outer))
-        self.append(CommandOption("aperture", aperture))
-        self.append(CommandOption("dyn_ratio", dyn_ratio))
-        self.append(CommandOption("gain", gain))
-        self.append(CommandOption("min_val", min_val))
-        self.append(CommandOption("max_val", max_val))
-
 
 class setref(BaseCommand):
     """
@@ -4311,11 +2271,6 @@ class setref(BaseCommand):
     
     Sets the reference image of the sequence given in first argument. **image_number** is the sequential number of the image in the sequence, not the number in the filename, starting at 1
     """
-
-    def __init__(self, sequence: str, image_number: int):
-        super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(image_number))
 
 
 class spcc(BaseCommand):
@@ -4340,54 +2295,6 @@ class spcc(BaseCommand):
     Atmospheric correction can be applied by passing **-atmos**. In this case the following optional arguments apply: **-obsheight=** specifies the observer's height above sea level in metres (default 10), **-pressure=** specifies local atmospheric pressure at the observing site in hPa, or **-slp=** specifies sea-level atmospheric pressure in hPa (default pressure is 1013.25 hPa at sea level)
     """
 
-    # TODO: clean up this command
-    def __init__(
-        self,
-        limitmag: t.Optional[str] = None,
-        monosensor: t.Optional[str] = None,
-        rfilter: t.Optional[str] = None,
-        gfilter: t.Optional[str] = None,
-        bfilter: t.Optional[str] = None,
-        oscsensor: t.Optional[str] = None,
-        oscfilter: t.Optional[str] = None,
-        osclpf: t.Optional[str] = None,
-        whiteref: t.Optional[str] = None,
-        narrowband: t.Optional[bool] = None,
-        rwl: t.Optional[str] = None,
-        gwl: t.Optional[str] = None,
-        bwl: t.Optional[str] = None,
-        rbw: t.Optional[str] = None,
-        gbw: t.Optional[str] = None,
-        bbw: t.Optional[str] = None,
-        bgtol: t.Optional[str] = None,
-        atmos: t.Optional[bool] = None,
-        obsheight: t.Optional[int] = None,
-        pressure: t.Optional[int] = None,
-        slp: t.Optional[int] = None,
-    ):
-        super().__init__()
-        self.append(CommandOption("limitmag", limitmag))
-        self.append(CommandOption("monosensor", monosensor))
-        self.append(CommandOption("rfilter", rfilter))
-        self.append(CommandOption("gfilter", gfilter))
-        self.append(CommandOption("bfilter", bfilter))
-        self.append(CommandOption("oscsensor", oscsensor))
-        self.append(CommandOption("oscfilter", oscfilter))
-        self.append(CommandOption("osclpf", osclpf))
-        self.append(CommandOption("whiteref", whiteref))
-        self.append(CommandOption("narrowband", narrowband))
-        self.append(CommandOption("rwl", rwl))
-        self.append(CommandOption("gwl", gwl))
-        self.append(CommandOption("bwl", bwl))
-        self.append(CommandOption("rbw", rbw))
-        self.append(CommandOption("gbw", gbw))
-        self.append(CommandOption("bbw", bbw))
-        self.append(CommandOption("bgtol", bgtol))
-        self.append(CommandOption("atmos", atmos))
-        self.append(CommandOption("obsheight", obsheight))
-        self.append(CommandOption("pressure", pressure))
-        self.append(CommandOption("slp", slp))
-
 
 class spcc_list(BaseCommand):
     """
@@ -4401,11 +2308,6 @@ class spcc_list(BaseCommand):
     Links: :ref:`spcc <spcc>`
     """
 
-    def __init__(self, list_type: str):
-        super().__init__()
-        # TODO: make this an enum
-        self.append(CommandArgument(list_type))
-
 
 class split(BaseCommand):
     """
@@ -4416,24 +2318,6 @@ class split(BaseCommand):
     Splits the loaded color image into three distinct files (one for each color) and saves them in **file1**.fit, **file2**.fit and **file3**.fit files. A last argument can optionally be supplied, **-hsl**, **-hsv** or **lab** to perform an HSL, HSV or CieLAB extraction. If no option are provided, the extraction is of RGB type, meaning no conversion is done
     """
 
-    def __init__(
-        self,
-        file1: str,
-        file2: str,
-        file3: str,
-        hsl: t.Optional[bool] = None,
-        hsv: t.Optional[bool] = None,
-        lab: t.Optional[bool] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(file1))
-        self.append(CommandArgument(file2))
-        self.append(CommandArgument(file3))
-        # TODO: make this an enum
-        self.append(CommandOption("hsl", hsl))
-        self.append(CommandOption("hsv", hsv))
-        self.append(CommandOption("lab", lab))
-
 
 class split_cfa(BaseCommand):
     """
@@ -4443,6 +2327,7 @@ class split_cfa(BaseCommand):
     
     Splits the loaded CFA image into four distinct files (one for each channel) and saves them in files
     """
+
 
 class stack(BaseCommand):
     """
@@ -4502,46 +2387,6 @@ class stack(BaseCommand):
     It is also possible to use manually selected images, either previously from the GUI or with the select or unselect commands, using the **-filter-included** argument.
     """
 
-    def __init__(
-        self,
-        base_name: str,
-        _type: stack_type = stack_type.STACK_REJ,
-        norm: stack_norm = stack_norm.NO_NORM,
-        rejection: stack_rejection = stack_rejection.REJECTION_WINSORIZED,
-        lower_rej: float = 3,
-        higher_rej: float = 3,
-        create_rejection_maps: stack_rejmaps = stack_rejmaps.NO_REJECTION_MAPS,
-        filters: t.Optional[t.List[sequence_filter_with_value]] = None,
-        filter_included: bool = False,
-        fast_norm: bool = False,
-        output_norm: bool = False,
-        weighting: stack_weighting = stack_weighting.NO_WEIGHT,
-        rgb_equalization: bool = False,
-        out: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(base_name))
-        self.append(CommandArgument(_type))
-        if _type == stack_type.STACK_REJ:
-            # we'll provide all optional arguments for simplicity
-            self.append(CommandArgument(rejection))
-            if rejection != stack_rejection.REJECTION_NONE:
-                self.append(CommandArgument(lower_rej))
-                self.append(CommandArgument(higher_rej))
-                if create_rejection_maps is not stack_rejmaps.NO_REJECTION_MAPS:
-                    self.append(CommandArgument(create_rejection_maps))
-        self.append(CommandArgument(norm))
-        if filters is not None:
-            for f in filters:
-                self.append(CommandOption(f.filter_type.value, f.value_str()))
-        self.append(CommandFlag("filter-incl", filter_included))
-        self.append(CommandFlag("fastnorm", fast_norm))
-        self.append(CommandFlag("output_norm", output_norm))
-        if weighting is not stack_weighting.NO_WEIGHT:
-            self.append(CommandArgument(weighting))
-        self.append(CommandFlag("rgb_equal", rgb_equalization))
-        self.append(CommandOption("out", out))
-
 
 class stackall(BaseCommand):
     """
@@ -4556,49 +2401,6 @@ class stackall(BaseCommand):
     
     Links: :ref:`stack <stack>`
     """
-
-    def __init__(
-        self,
-        base_name: str,
-        _type: stack_type = stack_type.STACK_REJ,
-        norm: stack_norm = stack_norm.NO_NORM,
-        rejection: stack_rejection = stack_rejection.REJECTION_WINSORIZED,
-        lower_rej: float = 3,
-        higher_rej: float = 3,
-        create_rejection_maps: stack_rejmaps = stack_rejmaps.NO_REJECTION_MAPS,
-        filters: t.Optional[t.List[sequence_filter_with_value]] = None,
-        filter_included: bool = False,
-        fast_norm: bool = False,
-        output_norm: bool = False,
-        weighting: stack_weighting = stack_weighting.NO_WEIGHT,
-        rgb_equalization: bool = False,
-        out: t.Optional[str] = None,
-    ):
-        super().__init__()
-        self.append(CommandArgument(base_name))
-        self.append(CommandArgument(_type))
-        if _type == stack_type.STACK_REJ:
-            # we'll provide all optional arguments for simplicity
-            self.append(CommandArgument(rejection))
-            if rejection != stack_rejection.REJECTION_NONE:
-                self.append(CommandArgument(lower_rej))
-                self.append(CommandArgument(higher_rej))
-                if create_rejection_maps is not stack_rejmaps.NO_REJECTION_MAPS:
-                    self.append(CommandArgument(create_rejection_maps))
-        self.append(CommandArgument(norm))
-        if filters is not None:
-            for f in filters:
-                self.append(CommandOption(f.filter_type.value, f.value_str()))
-        self.append(CommandFlag("filter-incl", filter_included))
-        self.append(CommandFlag("fastnorm", fast_norm))
-        self.append(CommandFlag("output_norm", output_norm))
-        if weighting is not stack_weighting.NO_WEIGHT:
-            self.append(CommandArgument(weighting))
-        self.append(CommandFlag("rgb_equal", rgb_equalization))
-        self.append(CommandOption("out", out))
-
-
-
 
 
 class starnet(BaseCommand):
@@ -4619,19 +2421,6 @@ class starnet(BaseCommand):
     - The optional parameter **-stride=value** may be provided, however the author of StarNet *strongly* recommends that the default stride of 256 be used
     """
 
-    def __init__(
-        self,
-        stretch: bool = False,
-        upscale: bool = False,
-        stride: t.Optional[int] = None,
-        nostarmask: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandFlag("stretch", stretch))
-        self.append(CommandFlag("upscale", upscale))
-        self.append(CommandOption("stride", stride))
-        self.append(CommandFlag("nostarmask", nostarmask))
-
 
 class start_ls(BaseCommand):
     """
@@ -4646,19 +2435,6 @@ class start_ls(BaseCommand):
     Links: :ref:`livestack <livestack>`, :ref:`stop_ls <stop_ls>`, :ref:`exit <exit>`
     """
 
-    def __init__(
-        self,
-        dark: t.Optional[str] = None,
-        flat: t.Optional[str] = None,
-        rotate: bool = False,
-        bits_32: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandOption("dark", dark))
-        self.append(CommandOption("flat", flat))
-        self.append(CommandFlag("rotate", rotate))
-        self.append(CommandFlag("32bits", bits_32))
-
 
 class stat(BaseCommand):
     """
@@ -4668,15 +2444,6 @@ class stat(BaseCommand):
     
     Returns statistics of the current image, the basic list by default or the main list if **main** is passed. If a selection is made, statistics are computed within the selection. If **-cfa** is passed and the image is CFA, statistics are made on per-filter extractions
     """
-
-    def __init__(
-        self,
-        cfa: bool = False,
-        main: bool = False,
-    ):
-        super().__init__()
-        self.append(CommandFlag("cfa", cfa))
-        self.append(CommandFlag("main", main))
 
 
 class stop_ls(BaseCommand):
@@ -4702,23 +2469,6 @@ class subsky(BaseCommand):
     Dithering, required for low dynamic gradients, can be enabled with **-dither**.
     For RBF, the additional smoothing parameter is also available. To use pre-existing background samples (e.g. if you have set background samples using a Python script) the **-existing** argument must be used
     """
-
-    def __init__(
-        self,
-        use_rbf: bool = False,
-        degree: int = 4,
-        samples: t.Optional[int] = None,
-        tolerance: t.Optional[float] = None,
-        smooth: t.Optional[float] = None,
-    ):
-        super().__init__()
-        if use_rbf:
-            self.append(CommandFlag("rbf", use_rbf))
-            self.append(CommandOption("smooth", smooth))
-        else:
-            self.append(CommandArgument(degree))
-        self.append(CommandOption("samples", samples))
-        self.append(CommandOption("tolerance", tolerance))
 
 
 class synthstar(BaseCommand):
@@ -4748,10 +2498,6 @@ class threshlo(BaseCommand):
     Replaces values below **level** in the loaded image with **level**
     """
 
-    def __init__(self, level: float):
-        super().__init__()
-        self.append(CommandArgument(level))
-
 
 class threshhi(BaseCommand):
     """
@@ -4762,10 +2508,6 @@ class threshhi(BaseCommand):
     Replaces values above **level** in the loaded image with **level**
     """
 
-    def __init__(self, level: float):
-        super().__init__()
-        self.append(CommandArgument(level))
-
 
 class thresh(BaseCommand):
     """
@@ -4775,11 +2517,6 @@ class thresh(BaseCommand):
     
     Replaces values below **level** in the loaded image with **level**
     """
-
-    def __init__(self, lo: float, hi: float):
-        super().__init__()
-        self.append(CommandArgument(lo))
-        self.append(CommandArgument(hi))
 
 
 class trixel(BaseCommand):
@@ -4797,10 +2534,6 @@ class trixel(BaseCommand):
     Links: :ref:`conesearch <conesearch>`
     """
 
-    def __init__(self, p: bool = False):
-        super().__init__()
-        self.append(CommandFlag("p", p))
-
 
 class unclipstars(BaseCommand):
     """
@@ -4810,7 +2543,6 @@ class unclipstars(BaseCommand):
     
     Re-profiles clipped stars of the loaded image to desaturate them, scaling the output so that all pixel values are <= 1.0
     """
-
 
 
 class unpurple(BaseCommand):
@@ -4827,12 +2559,6 @@ class unpurple(BaseCommand):
     Links: :ref:`psf <psf>`
     """
 
-    def __init__(self, starmask: bool = False, blue: t.Optional[float] = None, thresh: t.Optional[float] = None):
-        super().__init__()
-        self.append(CommandFlag("starmask", starmask))
-        self.append(CommandOption("blue", blue))
-        self.append(CommandOption("thresh", thresh))
-
 
 class unselect(BaseCommand):
     """
@@ -4844,12 +2570,6 @@ class unselect(BaseCommand):
     
     Links: :ref:`select <select>`
     """
-
-    def __init__(self, sequencename: str, from_: int, to: int):
-        super().__init__()
-        self.append(CommandArgument(sequencename))
-        self.append(CommandArgument(from_))
-        self.append(CommandArgument(to))
 
 
 class unsharp(BaseCommand):
@@ -4865,11 +2585,6 @@ class unsharp(BaseCommand):
     Links: :ref:`gauss <gauss>`
     """
 
-    def __init__(self, sigma: float, multi: float):
-        super().__init__()
-        self.append(CommandArgument(sigma))
-        self.append(CommandArgument(multi))
-
 
 class update_key(BaseCommand):
     """
@@ -4882,33 +2597,6 @@ class update_key(BaseCommand):
     
     Updates FITS keyword. Please note that the validity of **value** is not checked. This verification is the responsibility of the user. It is also possible to delete a key with the **-delete** option in front of the name of the key to be deleted, or to modify the key with the **-modify** option. The latter must be followed by the key to be modified and the new key name. Finally, the **-comment** option, followed by text, adds a comment to the FITS header. Please note that any text containing spaces must be enclosed in double quotation marks
     """
-
-    def __init__(
-        self,
-        key: str,
-        value: t.Optional[str] = None,
-        keycomment: t.Optional[str] = None,
-        delete: t.Optional[str] = None,
-        modify: t.Optional[str] = None,
-        new_key: t.Optional[str] = None,
-        comment: t.Optional[str] = None,
-    ):
-        super().__init__()
-        if value is not None:
-            self.append(CommandArgument(key))
-            self.append(CommandArgument(value))
-            if keycomment is not None:
-                self.append(CommandArgument(keycomment))
-        if delete is not None:
-            self.append(CommandFlag("delete"))
-            self.append(CommandArgument(key))
-        if modify is not None:
-            self.append(CommandFlag("modify"))
-            self.append(CommandArgument(key))
-            self.append(CommandArgument(new_key))
-        if comment is not None:
-            self.append(CommandFlag("comment"))
-            self.append(CommandArgument(comment))
 
 
 class wavelet(BaseCommand):
@@ -4923,11 +2611,6 @@ class wavelet(BaseCommand):
     
     Links: :ref:`wrecons <wrecons>`, :ref:`extract <extract>`
     """
-
-    def __init__(self, nbr_layers: int, type_: int):
-        super().__init__()
-        self.append(CommandArgument(nbr_layers))
-        self.append(CommandArgument(type_))
 
 
 class wiener(BaseCommand):
@@ -4945,13 +2628,6 @@ class wiener(BaseCommand):
     Links: :ref:`psf <psf>`, :ref:`makepsf <makepsf>`
     """
 
-    def __init__(self, loadpsf: t.Optional[str] = None, alpha: t.Optional[float] = None):
-        super().__init__()
-        if loadpsf is not None:
-            self.append(CommandOption("loadpsf", loadpsf))
-        if alpha is not None:
-            self.append(CommandOption("alpha", alpha))
-
 
 class wrecons(BaseCommand):
     """
@@ -4964,7 +2640,4 @@ class wrecons(BaseCommand):
     Links: :ref:`wavelet <wavelet>`
     """
 
-    def __init__(self, *coefficients: float):
-        super().__init__()
-        for coefficient in coefficients:
-            self.append(CommandArgument(coefficient))
+
