@@ -92,13 +92,9 @@ class ExportSirilCommands:
                     f"{doc_dir}/siril-doc-main.zip",
                 ]
             )
-            subprocess.run(
-                ["unzip", f"{doc_dir}/siril-doc-main.zip", "-d", doc_dir]
-            )
+            subprocess.run(["unzip", f"{doc_dir}/siril-doc-main.zip", "-d", doc_dir])
 
-        commands = self.parse_commands(
-            doc_dir / "siril-doc-main" / "doc" / "Commands.rst"
-        )
+        commands = self.parse_commands(doc_dir / "siril-doc-main" / "doc" / "Commands.rst")
         log.info(f"Parsed {len(commands)} commands")
 
         # Filter out non-scriptable commands
@@ -123,7 +119,7 @@ class ExportSirilCommands:
         log.info(f"Generated command classes to {output_file}")
 
         log.info("Siril commands exported")
-    
+
     def _make_doc_dir(self, current_dir: pathlib.Path):
         doc_dir = current_dir / "siril-doc"
         log.info(f"doc dir: {doc_dir}")
@@ -134,7 +130,7 @@ class ExportSirilCommands:
 
         if not doc_dir.exists():
             doc_dir.mkdir(parents=True, exist_ok=True)
-        
+
         return doc_dir
 
     def _make_generated_dir(self, current_dir: pathlib.Path):
@@ -143,7 +139,7 @@ class ExportSirilCommands:
 
         if not generated_dir.exists():
             generated_dir.mkdir(parents=True, exist_ok=True)
-        
+
         return generated_dir
 
     def parse_commands(self, commands_file: pathlib.Path) -> t.List[CommandInfo]:
