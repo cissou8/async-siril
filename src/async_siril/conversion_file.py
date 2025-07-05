@@ -12,6 +12,7 @@ class ConversionEntry:
     original_file: pathlib.Path
     converted_file: pathlib.Path
 
+
 @dataclass
 class ConversionFile:
     entries: t.List[ConversionEntry]

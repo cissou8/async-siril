@@ -1,7 +1,20 @@
 from __future__ import annotations
 
 import typing as t
+
 from enum import Enum
+from dataclasses import dataclass
+
+
+@dataclass
+class Rect:
+    x: int
+    y: int
+    width: int
+    height: int
+
+    def __str__(self):
+        return f"{self.x} {self.y} {self.width} {self.height}"
 
 
 class sequence_filter_with_value:
@@ -23,10 +36,18 @@ class sequence_filter_with_value:
         return f"{self.percent}%"
 
 
+class clipmode(Enum):
+    CLIPMODE_CLIP = "clip"
+    CLIPMODE_RESCALE = "rescale"
+    CLIPMODE_RGB_BLEND = "rgbblend"
+    CLIPMODE_GLOBAL_RESCALE = "globalrescale"
+
+
 class fits_extension(Enum):
     FITS_EXT_FIT = "fit"
     FITS_EXT_FITS = "fits"
     FITS_EXT_FTS = "fts"
+
 
 class registration_transformation(Enum):
     REG_TRANSF_SHIFT = "shift"
@@ -42,6 +63,7 @@ class pixel_interpolation(Enum):
     INTERP_LANCZOS4 = "lanczos4"
     INTERP_LINEAR = "linear"
     INTERP_AREA = "area"
+
 
 class sequence_framing(Enum):
     FRAME_CURRENT = "current"
@@ -60,10 +82,12 @@ class sequence_filter_type(Enum):
     FILTER_BACKGROUND = "filter-bkg"
     FILTER_STAR_COUNT = "filter-nbstars"
 
+
 class compression_type(Enum):
     COMPRESSION_RICE = "rice"
     COMPRESSION_GZIP1 = "gzip1"
     COMPRESSION_GZIP2 = "gzip2"
+
 
 class stack_type(Enum):
     STACK_SUM = "sum"
@@ -105,6 +129,7 @@ class stack_rejmaps(Enum):
     TWO_REJECTION_MAPS = "-rejmaps"
     MERGED_REJECTION_MAPS = "-rejmap"
 
+
 class magnitude_option(Enum):
     DEFAULT_MAGNITUDE = 1
     MAGNITUDE_OFFSET = 2
@@ -119,9 +144,11 @@ class star_catalog(Enum):
     BRIGHTSTARS = "brightstars"
     APASS = "apass"
 
+
 class rmgreen_protection(Enum):
     AVERAGE_NEUTRAL = 0
     MAXIMUM_NEUTRAL = 1
+
 
 class saturation_hue_range(Enum):
     PINK_ORANGE = 0
@@ -131,6 +158,7 @@ class saturation_hue_range(Enum):
     CYAN_MAGENTA = 4
     MAGENTA_PINK = 5
     ALL = 6
+
 
 class catalog_option(Enum):
     APASS = "apass"

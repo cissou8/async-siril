@@ -14,12 +14,15 @@ from async_siril.command import fits_extension
 
 log = structlog.stdlib.get_logger()
 
+
 @a.define(kw_only=True, frozen=True)
 class CreateMasterDark:
     raw_folder: t.Annotated[pathlib.Path, cappa.Arg(help="Path to the raw folder of Dark frames")]
-    ext: t.Annotated[fits_extension, cappa.Arg(short=True, default=fits_extension.FITS_EXT_FIT, help="Extension of the Dark frames")]
+    ext: t.Annotated[
+        fits_extension, cappa.Arg(short=True, default=fits_extension.FITS_EXT_FIT, help="Extension of the Dark frames")
+    ]
     name: t.Annotated[str, cappa.Arg(short=True, default="DARK_2025-06-30", help="Name of the master dark")]
-    
+
     dslr: t.Annotated[bool, cappa.Arg(short=True, default=False, help="Use DSLR mode (dark optimization)")]
     bias: t.Annotated[t.Optional[pathlib.Path], cappa.Arg(short=True, help="Path to the master bias")] = None
 
@@ -38,7 +41,7 @@ class CreateMasterDark:
         with tempfile.TemporaryDirectory(dir=self.raw_folder) as tempdir:  # type: ignore
             temp = pathlib.Path(tempdir)
             log.info(f"temp dir: {temp}")
-            
+
             async with SirilCli(directory=self.raw_folder) as siril:
                 await siril.command(setext(self.ext))
                 await siril.command(set32bits())
@@ -55,9 +58,9 @@ class CreateMasterDark:
                     await siril.command(stack(f"pp_{self.name}", out=out))
                 else:
                     await siril.command(stack(self.name, out=out))
-        
+
         log.info("Master dark created")
-        
+
 
 def main() -> None:  # pragma: no cover
     try:

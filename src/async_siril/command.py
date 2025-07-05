@@ -10,20 +10,22 @@ import structlog.stdlib
 import typing as t
 
 from .command_types import (
-    stack_weighting, 
-    sequence_framing, 
-    compression_type, 
-    fits_extension, 
-    registration_transformation, 
-    pixel_interpolation, 
-    stack_rejmaps, 
-    stack_rejection, 
-    stack_norm, 
-    stack_type, 
+    stack_weighting,
+    sequence_framing,
+    compression_type,
+    fits_extension,
+    registration_transformation,
+    pixel_interpolation,
+    stack_rejmaps,
+    stack_rejection,
+    stack_norm,
+    stack_type,
     star_catalog,
     rmgreen_protection,
     magnitude_option,
     sequence_filter_with_value,
+    Rect,
+    clipmode,
 )
 
 
@@ -125,34 +127,39 @@ class BaseCommand:
 class asinh(BaseCommand):
     """
     .. code-block:: text
-    
+
         asinh [-human] stretch { [offset] [-clipmode=] }
-    
+
     Stretches the image to show faint objects using an hyperbolic arcsin transformation. The mandatory argument **stretch**, typically between 1 and 1000, will give the strength of the stretch. The black point can be offset by providing an optional **offset** argument in the normalized pixel value of [0, 1]. Finally the option **-human** enables using human eye luminous efficiency weights to compute the luminance used to compute the stretch value for each pixel, instead of the simple mean of the channels pixel values. This stretch method preserves lightness from the L\*a\*b\* color space. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         stretch: float,
-        human_weighting: t.Optional[bool] = None,
-        offset: t.Optional[float] = None,
+        human_weighting: bool = False,
+        offset: t.Optional[t.tuple[int, int]] = None,
+        clipmode: t.Optional[clipmode] = None,
     ):
         super().__init__()
-        self.append(CommandFlag("human", human_weighting is not None and human_weighting is True))
+        self.append(CommandFlag("human", human_weighting))
         self.append(CommandArgument(stretch))
-        self.append(CommandArgument(offset))
+        if offset is not None:
+            self.append(CommandArgument(f"[{offset[0]},{offset[1]}]"))
+        self.append(CommandOption("clipmode", clipmode))
 
 
 class autoghs(BaseCommand):
     """
     .. code-block:: text
-    
+
         autoghs [-linked] shadowsclip stretchamount [-b=] [-hp=] [-lp=] [-clipmode=]
-    
+
     Application of the generalized hyperbolic stretch with a symmetry point SP defined as k.sigma from the median of each channel (the provided **shadowsclip** value is the k here and can be negative). By default, SP and the stretch are computed per channel; SP can be computed as a mean of image channels by passing **-linked**. The stretch amount **D** is provided in the second mandatory argument.
     Implicit values of 13 for **B**, making it very focused on the SP brightness range, 0.7 for **HP**, 0 for **LP** are used but can be changed with the options of the same names. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         shadowsclip: float,
@@ -176,14 +183,15 @@ class autoghs(BaseCommand):
 class autostretch(BaseCommand):
     """
     .. code-block:: text
-    
+
         autostretch [-linked] [shadowsclip [targetbg]]
-    
+
     Auto-stretches the currently loaded image, with different parameters for each channel (unlinked) unless **-linked** is passed. Arguments are optional, **shadowclip** is the shadows clipping point, measured in sigma units from the main histogram peak (default is -2.8), **targetbg** is the target background value, giving a final brightness to the image, range [0, 1], default is 0.25. The default values are those used in the Auto-stretch rendering from the GUI.
-    
+
     Do not use the unlinked version after color calibration, it will alter the white balance
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         linked: t.Optional[bool] = None,
@@ -200,9 +208,9 @@ class autostretch(BaseCommand):
 class bg(BaseCommand):
     """
     .. code-block:: text
-    
+
         bg
-    
+
     Returns the background level of the loaded image
     """
 
@@ -210,11 +218,11 @@ class bg(BaseCommand):
 class bgnoise(BaseCommand):
     """
     .. code-block:: text
-    
+
         bgnoise
-    
+
     Returns the background noise level of the loaded image
-    
+
     For more information, see the :ref:`statistics documentation
     <Statistics:Background noise>`
     """
@@ -223,54 +231,57 @@ class bgnoise(BaseCommand):
 class binxy(BaseCommand):
     """
     .. code-block:: text
-    
+
         binxy coefficient [-sum]
-    
+
     Computes the numerical binning of the in-memory image (sum of the pixels 2x2, 3x3..., like the analogic binning of CCD camera). If the optional argument **-sum** is passed, then the sum of pixels is computed, while it is the average when no optional argument is provided
     """
+
+    # TODO: Review python types
+    def __init__(
+        self,
+        coefficient: float,
+        sum: t.Optional[bool] = None,
+    ):
+        super().__init__()
+        self.append(CommandArgument(coefficient))
+        self.append(CommandFlag("sum", sum is not None and sum is True))
 
 
 class boxselect(BaseCommand):
     """
     .. code-block:: text
-    
+
         boxselect [-clear] [x y width height]
-    
+
     Make a selection area in the currently loaded image with the arguments **x**, **y**, **width** and **height**, with **x** and **y** being the coordinates of the top left corner starting at (0, 0), and **width** and **height**, the size of the selection. The **-clear** argument deletes any selection area. If no argument is passed, the current selection is printed
     """
 
     def __init__(
         self,
-        x: t.Optional[int] = None,
-        y: t.Optional[int] = None,
-        width: t.Optional[int] = None,
-        height: t.Optional[int] = None,
-        clear: t.Optional[bool] = None,
+        clear: bool = False,
+        rect: t.Optional[Rect] = None,
     ):
         super().__init__()
-        self.append(CommandFlag("clear", clear is not None and clear is True))
-        # TODO: make a rect type for this
-        if x is not None and y is not None and width is not None and height is not None:
-            self.append(CommandArgument(x))
-            self.append(CommandArgument(y))
-            self.append(CommandArgument(width))
-            self.append(CommandArgument(height))
+        self.append(CommandFlag("clear", clear))
+        if rect is not None:
+            self.append(CommandArgument(str(rect)))
 
 
 class calibrate(BaseCommand):
     """
     .. code-block:: text
-    
+
         calibrate sequencename [-bias=filename] [-dark=filename] [-flat=filename] [-cc=dark [siglo sighi] || -cc=bpm bpmfile] [-cfa] [-debayer] [-fix_xtrans] [-equalize_cfa] [-opt[=exp]] [-all] [-prefix=] [-fitseq]
-    
+
     Calibrates the sequence **sequencename** using bias, dark and flat given in argument.
-    
+
     For bias, a uniform level can be specified instead of an image, by entering a quoted expression starting with an = sign, such as -bias="=256" or -bias="=64*$OFFSET".
-    
+
     By default, cosmetic correction is not activated. If you wish to apply some, you will need to specify it with **-cc=** option.
     You can use **-cc=dark** to detect hot and cold pixels from the masterdark (a masterdark must be given with the **-dark=** option), optionally followed by **siglo** and **sighi** for cold and hot pixels respectively. A value of 0 deactivates the correction. If sigmas are not provided, only hot pixels detection with a sigma of 3 will be applied.
     Alternatively, you can use **-cc=bpm** followed by the path to your Bad Pixel Map to specify which pixels must be corrected. An example file can be obtained with a *find_hot* command on a masterdark.
-    
+
     Three options apply to color images (in CFA format): **-cfa** for cosmetic correction purposes, **-debayer** to demosaic images before saving them, and **-equalize_cfa** to equalize the mean intensity of RGB layers of the master flat, to avoid tinting the calibrated image.
     The **-fix_xtrans** option is dedicated to X-Trans images by applying a correction on darks and biases to remove a rectangle pattern caused by autofocus.
     It's also possible to optimize dark subtraction with **-opt**, which requires the supply of bias and dark masters, and automatically calculates the coefficient to be applied to dark, or calculates the coefficient thanks to the exposure keyword with **-opt=exp**.
@@ -279,6 +290,7 @@ class calibrate(BaseCommand):
     If **-fitseq** is provided, the output sequence will be a FITS sequence (single file)
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         base_name: str,
@@ -317,17 +329,17 @@ class calibrate(BaseCommand):
 class calibrate_single(BaseCommand):
     """
     .. code-block:: text
-    
+
         calibrate_single imagename [-bias=filename] [-dark=filename] [-flat=filename] [-cc=dark [siglo sighi] || -cc=bpm bpmfile] [-cfa] [-debayer] [-fix_xtrans] [-equalize_cfa] [-opt[=exp]] [-prefix=]
-    
+
     Calibrates the image **imagename** using bias, dark and flat given in argument.
-    
+
     For bias, a uniform level can be specified instead of an image, by entering a quoted expression starting with an = sign, such as -bias="=256" or -bias="=64*$OFFSET".
-    
+
     By default, cosmetic correction is not activated. If you wish to apply some, you will need to specify it with **-cc=** option.
     You can use **-cc=dark** to detect hot and cold pixels from the masterdark (a masterdark must be given with the **-dark=** option), optionally followed by **siglo** and **sighi** for cold and hot pixels respectively. A value of 0 deactivates the correction. If sigmas are not provided, only hot pixels detection with a sigma of 3 will be applied.
     Alternatively, you can use **-cc=bpm** followed by the path to your Bad Pixel Map to specify which pixels must be corrected. An example file can be obtained with a *find_hot* command on a masterdark.
-    
+
     Three options apply to color images (in CFA format): **-cfa** for cosmetic correction purposes, **-debayer** to demosaic images before saving them, and **-equalize_cfa** to equalize the mean intensity of RGB layers of the master flat, to avoid tinting the calibrated image.
     The **-fix_xtrans** option is dedicated to X-Trans images by applying a correction on darks and biases to remove a rectangle pattern caused by autofocus.
     It's also possible to optimize dark subtraction with **-opt**, which requires the supply of bias and dark masters, and automatically calculates the coefficient to be applied to dark, or calculates the coefficient thanks to the exposure keyword with **-opt=exp**
@@ -363,9 +375,9 @@ class calibrate_single(BaseCommand):
 class capabilities(BaseCommand):
     """
     .. code-block:: text
-    
+
         capabilities
-    
+
     Lists Siril capabilities, based on compilation options and runtime
     """
 
@@ -373,9 +385,9 @@ class capabilities(BaseCommand):
 class catsearch(BaseCommand):
     """
     .. code-block:: text
-    
+
         catsearch name
-    
+
     Searches an object by **name** and adds it to the user annotation catalog. The object is first searched in the annotation catalogs, if not found a request is made to SIMBAD.
     The object can be a solar system object, in which case a prefix, 'a:' for asteroid, 'p:' for planet, 'c:' for comet, 'dp:' for dwarf planet or 's:' for natural satellite, is required before the object name. The search is done for the date, time and observing location found in the image header, using the `IMCCE Miriade service <https://ssp.imcce.fr/webservices/miriade/howto/ephemcc/#howto-sso>`__
     """
@@ -388,26 +400,27 @@ class catsearch(BaseCommand):
 class ccm(BaseCommand):
     """
     .. code-block:: text
-    
+
         ccm m00 m01 m02 m10 m11 m12 m20 m21 m22 [gamma]
-    
+
     Applies a color conversion matrix to the current image.
-    
+
     There are 9 mandatory arguments corresponding to the 9 matrix elements:
-    
+
     m00, m01, m02
     m10, m11, m12
     m20, m21, m22
-    
+
     An additional tenth argument **[gamma]** can be provided: if it is omitted, it defaults to 1.0.
-    
+
     These are applied to each pixel according to the following formulae:
-    
+
     r' = (m00 \* r + m01 \* g + m02 \* b)^(-1/gamma)
     g' = (m10 \* r + m11 \* g + m12 \* b)^(-1/gamma)
     b' = (m20 \* r + m21 \* g + m22 \* b)^(-1/gamma)
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         m00: float,
@@ -438,11 +451,11 @@ class ccm(BaseCommand):
 class cd(BaseCommand):
     """
     .. code-block:: text
-    
+
         cd directory
-    
+
     Sets the new current working directory.
-    
+
     The argument **directory** can contain the ~ token, expanded as the home directory, directories with spaces in the name can be protected using single or double quotes
     """
 
@@ -454,9 +467,9 @@ class cd(BaseCommand):
 class cdg(BaseCommand):
     """
     .. code-block:: text
-    
+
         cdg
-    
+
     Returns the coordinates of the center of gravity of the image. Only pixels with values above 15.7% of max ADU and having four neighbors filling the same condition are used to compute it, and it is computed only if there are at least 50 of them
     """
 
@@ -464,15 +477,16 @@ class cdg(BaseCommand):
 class clahe(BaseCommand):
     """
     .. code-block:: text
-    
+
         clahe cliplimit tileSize
-    
+
     Equalizes the histogram of an image using Contrast Limited Adaptive Histogram Equalization.
-    
+
     **cliplimit** sets the threshold for contrast limiting.
     **tilesize** sets the size of grid for histogram equalization. Input image will be divided into equally sized rectangular tiles
     """
 
+    # TODO: Review python types
     def __init__(self, cliplimit: int, tileSize: int):
         super().__init__()
         self.append(CommandArgument(cliplimit))
@@ -482,9 +496,9 @@ class clahe(BaseCommand):
 class close(BaseCommand):
     """
     .. code-block:: text
-    
+
         close
-    
+
     Properly closes the opened image and the opened sequence, if any
     """
 
@@ -492,24 +506,25 @@ class close(BaseCommand):
 class conesearch(BaseCommand):
     """
     .. code-block:: text
-    
+
         conesearch [limit_magnitude] [-cat=] [-phot] [-obscode=] [-tag={on|off}] [-log={on|off}] [-trix=] [-out=]
-    
+
     Displays stars from the local catalog by default for the loaded plate solved image, down to the provided **limit_magnitude** (13 by default for most catalogues, except 14.5 for aavso_chart, 20 for solsys, and ommitted for pgc).
     An alternate online catalog can be specified with **-cat=**, taking values
     - for stars: tycho2, nomad, gaia, localgaia, ppmxl, bsc, apass, gcvs, vsx, simbad, aavso_chart
     - for exoplanets: exo
     - for deep-sky: pgc
     - for solar system objects: solsys (closest `IAU observatory code <https://vo.imcce.fr/webservices/data/displayIAUObsCodes.php>`__ can be passed with the argument **-obscode=** for better position accuracy)
-    
+
     For stars catalogues containing photometric data, stars with no B-V information will be kept; they can be excluded by passing **-phot**
     The argument **-trix=** can be passed instead of a catalogue followed by a number between 0 and 511 to plot stars contained in local catalogues trixel of level 3 (for dev usage mainly)
-    
+
     Some catalogs (bsc, gcvs, pgc, exo, aavso_chart, varisum and solsys) will also display, by default, names alongside markers in the display (GUI only) and list them in the log. For others with larger number of objects, namely vsx and simbad, the information can also be shown but, as it may clutter the display, it is not activated by default. This behavior can be toggled on/off with the options **-tag=on|off** to display names alongside markers and **-log=on|off** to list the objects in the console log
-    
+
     The list of items that are present in the image can optionally saved to a csv file by passing the argument **-out=**
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         limit_magnitude: t.Optional[int] = None,
@@ -543,19 +558,20 @@ class conesearch(BaseCommand):
 class convert(BaseCommand):
     """
     .. code-block:: text
-    
+
         convert basename [-debayer] [-fitseq] [-ser] [-start=index] [-out=]
-    
+
     Converts all images of the current working directory that are in a supported format into Siril's sequence of FITS images (several files) or a FITS sequence (single file) if **-fitseq** is provided or a SER sequence (single file) if **-ser** is provided. The argument **basename** is the base name of the new sequence, numbers and the extension will be put behind it.
     For FITS images, Siril will try to make a symbolic link; if not possible, files will be copied. The option **-debayer** applies demosaicing to CFA input images; in this case no symbolic link is done.
     **-start=index** sets the starting index number, useful to continue an existing sequence (not used with -fitseq or **-ser**; make sure you remove or clear the target .seq if it exists in that case).
     The **-out=** option changes the output directory to the provided argument.
-    
+
     See also CONVERTRAW and LINK
-    
+
     Links: :ref:`convertraw <convertraw>`, :ref:`link <link>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         base_name: str,
@@ -577,11 +593,11 @@ class convert(BaseCommand):
 class convertraw(BaseCommand):
     """
     .. code-block:: text
-    
+
         convertraw basename [-debayer] [-fitseq] [-ser] [-start=index] [-out=]
-    
+
     Same as CONVERT but converts only DSLR RAW files found in the current working directory
-    
+
     Links: :ref:`convert <convert>`
     """
 
@@ -606,14 +622,14 @@ class convertraw(BaseCommand):
 class cosme(BaseCommand):
     """
     .. code-block:: text
-    
+
         cosme [filename].lst
-    
+
     Applies the local mean to a set of pixels on the loaded image (cosmetic correction). The coordinates of these pixels are in a text file [.lst file], the FIND_HOT command can also create it for single hot pixels, but manual operation is needed to remove rows or columns. COSME is adapted to correct residual hot and cold pixels after calibration.
     Instead of providing the list of bad pixels, it's also possible to detect them in the current image using the FIND_COSME command
-    
+
     Links: :ref:`find_hot <find_hot>`, :ref:`find_cosme <find_cosme>`
-    
+
     File format for the bad pixels list:
     * Lines in the form `P x y` will fix the pixel at coordinates (x, y) type is an optional character (C or H) specifying to Siril if the current pixel is cold or hot. This line is created by the command FIND_HOT but you also can add the two following line types manually
     * Lines in the form `C x 0` will fix the bad column at coordinates x.
@@ -628,11 +644,11 @@ class cosme(BaseCommand):
 class cosme_cfa(BaseCommand):
     """
     .. code-block:: text
-    
+
         cosme_cfa [filename].lst
-    
+
     Same function as COSME but applying to RAW CFA images
-    
+
     Links: :ref:`cosme <cosme>`
     """
 
@@ -644,54 +660,51 @@ class cosme_cfa(BaseCommand):
 class crop(BaseCommand):
     """
     .. code-block:: text
-    
+
         crop [x y width height]
-    
+
     Crops to a selected area of the loaded image.
-    
+
     If a selection is active, no further arguments are required. Otherwise, or in scripts, arguments have to be given, with **x** and **y** being the coordinates of the top left corner, and **width** and **height** the size of the selection. Alternatively, the selection can be made using the BOXSELECT command
-    
+
     Links: :ref:`boxselect <boxselect>`
     """
 
     def __init__(
         self,
-        x: t.Optional[int] = None,
-        y: t.Optional[int] = None,
-        width: t.Optional[int] = None,
-        height: t.Optional[int] = None,
+        rect: t.Optional[Rect] = None,
     ):
         super().__init__()
-        # TODO: use rect
-        if x is not None and y is not None and width is not None and height is not None:
-            self.append(CommandArgument(f"{x} {y} {width} {height}"))
+        if rect is not None:
+            self.append(CommandArgument(str(rect)))
 
 
 class denoise(BaseCommand):
     """
     .. code-block:: text
-    
+
         denoise [-nocosmetic] [-mod=m] [ -vst | -da3d | -sos=n [-rho=r] ] [-indep]
-    
+
     Denoises the image using the non-local Bayesian algorithm described by `Lebrun, Buades and Morel <https://www.ipol.im/pub/art/2013/16>`__.
-    
+
     It is strongly recommended to apply cosmetic correction to remove salt and pepper noise before running denoise, and by default this command will apply cosmetic correction automatically. However, if this has already been carried out earlier in the workflow it may be disabled here using the optional command **-nocosmetic**.
-    
+
     An optional argument **-mod=m** may be given, where 0 <= m <= 1. The output pixel is computed as : *out=m x d + (1 − m) x in*, where *d* is the denoised pixel value. A modulation value of 1 will apply no modulation. If the parameter is omitted, it defaults to 1.
-    
+
     The optional argument **-vst** can be used to apply the generalised Anscombe variance stabilising transform prior to NL-Bayes. This is useful with photon-starved images such as single subs, where the noise follows a Poisson or Poisson-Gaussian distribution rather than being primarily Gaussian. It cannot be used in conjunction with DA3D or SOS, and for denoising stacked images it is usually not beneficial.
-    
+
     The optional argument **-da3d** can be used to enable Data-Adaptive Dual Domain Denoising (DA3D) as a final stage denoising algorithm. This uses the output of BM3D as a guide image to refine the denoising. It improves detail and reduces staircasing artefacts.
-    
+
     The optional argument **-sos=\ n** can be used to enable Strengthen-Operate-Subtract (SOS) iterative denoise boosting, with the number of iterations specified by n. In particular, this booster may produce better results if the un-boosted NL-Bayes algorithm produces artefacts in background areas. If both -da3d and -sos=n are specified, the last to be specified will apply.
-    
+
     The optional argument **-rho=r** may be specified, where 0 < r < 1. This is used by the SOS booster to determine the amount of noisy image added in to the intermediate result between each iteration. If -sos=n is not specified then the parameter is ignored.
-    
+
     The default is not to apply DA3D or SOS, as the improvement in denoising is usually relatively small and these techniques requires additional processing time.
-    
+
     In very rare cases, blocky coloured artefacts may be found in the output when denoising colour images. The optional argument **-indep** can be used to prevent this by denoising each channel separately. This is slower but will eliminate artefacts
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         nocosmetic: bool = False,
@@ -716,9 +729,9 @@ class denoise(BaseCommand):
 class dumpheader(BaseCommand):
     """
     .. code-block:: text
-    
+
         dumpheader
-    
+
     Dumps the FITS header of the loaded image in the console
     """
 
@@ -726,9 +739,9 @@ class dumpheader(BaseCommand):
 class entropy(BaseCommand):
     """
     .. code-block:: text
-    
+
         entropy
-    
+
     Computes the entropy of the loaded image on the displayed layer, only in the selected area if one has been selected or in the whole image. The entropy is one way of measuring the noise or the details in an image
     """
 
@@ -736,15 +749,15 @@ class entropy(BaseCommand):
 class epf(BaseCommand):
     """
     .. code-block:: text
-    
+
         epf [-guided] [-d=] [-si=] [-ss=] [-mod=] [-guideimage=]
-    
+
     Applies an edge preserving filter. By default a bilateral filter is applied; a guided filter can be specified using the argument **-guided**. The filter diameter defaults to 3 and can be set using **-d=**. Be careful with values of d greater than 20 as the algorithm can be computationally expensive.
-    
+
     The intensity filtering sigma value can be set using **-si=** and the spatial sigma value can be set using **-ss=**. Sigma values represent the difference in pixel values over which the filter acts strongly: for 32-bit images the value should be between 0 and 1.0, whereas for 16-bit images it should be between 0 and 65535. The defaults if not specified are for both to be set to 11. If **-d=0** is set then the filter diameter will be set automatically based on the value of **-ss**. *Note that when applying a guided filter, only* **-sc** *applies.*
-    
+
     When specifying a guided filter, a guide image may be set using **-guideimage=**. The default if no guide image is specified is to perform a self-guided filter. *Note: the guide image must have the same dimensions as the image to be filtered!*
-    
+
     The strength of the filter can be modulated using the **-mod=** argument. If mod = 1.0 the full effect of the filter will be applied; for mod less than 1.0 a proportion of the original image will be mixed with the result, and for mod = 0.0 no filtering will be applied
     """
 
@@ -769,24 +782,26 @@ class epf(BaseCommand):
 class exit(BaseCommand):
     """
     .. code-block:: text
-    
+
         exit
-    
+
     Quits the application
     """
+
 
 class extract(BaseCommand):
     """
     .. code-block:: text
-    
+
         extract NbPlans
-    
+
     Extracts **NbPlans** planes of wavelet domain of the loaded image.
     See also WAVELET and WRECONS. For color extraction, see SPLIT
-    
+
     Links: :ref:`wavelet <wavelet>`, :ref:`wrecons <wrecons>`, :ref:`split <split>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         nbplans: int,
@@ -798,25 +813,23 @@ class extract(BaseCommand):
 class extract_Green(BaseCommand):
     """
     .. code-block:: text
-    
+
         extract_Green
-    
+
     Extracts green signal from the loaded CFA image. It reads the Bayer matrix information from the image or the preferences and exports only the averaged green filter data as a new half-sized FITS file. A new file is created, its name is prefixed with "Green\_"
     """
-
-    def __init__(self):
-        super().__init__()
 
 
 class extract_Ha(BaseCommand):
     """
     .. code-block:: text
-    
+
         extract_Ha [-upscale]
-    
+
     Extracts H-Alpha signal from the loaded CFA image. It reads the Bayer matrix information from the image or the preferences and exports only the red filter data as a new half-sized FITS file. If the argument **-upscale** is provided, the output will be upscaled x2 to match the full sensor resolution, for example to match other images produced by the same family of sensors. A new file is created, its name is prefixed with "Ha\_"
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         upscale: bool = False,
@@ -828,14 +841,15 @@ class extract_Ha(BaseCommand):
 class extract_HaOIII(BaseCommand):
     """
     .. code-block:: text
-    
+
         extract_HaOIII [-resample=]
-    
+
     Extracts H-Alpha and O-III signals from the loaded CFA image. It reads the Bayer matrix information from the image or the preferences and exports only the red filter data for H-Alpha as a new half-sized FITS file (like EXTRACTHA) and keeps the three others for O-III with an interpolated replacement for the red pixel. The output files names start with the prefix "Ha\_" and "OIII\_"
-    
+
     The optional argument **-resample={ha|oiii}** sets whether to upsample the Ha image or downsample the OIII image to have images the same size. If this argument is not provided, no resampling will be carried out and the OIII image will have twice the height and width of the Ha image
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         resample: t.Optional[str] = None,
@@ -848,11 +862,11 @@ class extract_HaOIII(BaseCommand):
 class fdiv(BaseCommand):
     """
     .. code-block:: text
-    
+
         fdiv filename scalar
-    
+
     Divides the loaded image by the image given in argument. The resulting image is multiplied by the value of the **scalar** argument. See also IDIV
-    
+
     Links: :ref:`idiv <idiv>`
     """
 
@@ -869,35 +883,31 @@ class fdiv(BaseCommand):
 class ffill(BaseCommand):
     """
     .. code-block:: text
-    
+
         ffill value [x y width height]
-    
+
     Same command as FILL but this is a symmetric fill of a region defined by the mouse or with BOXSELECT. Used to process an image in the Fourier (FFT) domain
-    
+
     Links: :ref:`fill <fill>`, :ref:`boxselect <boxselect>`
     """
 
     def __init__(
         self,
         value: float,
-        x: t.Optional[int] = None,
-        y: t.Optional[int] = None,
-        width: t.Optional[int] = None,
-        height: t.Optional[int] = None,
+        rect: t.Optional[Rect] = None,
     ):
         super().__init__()
         self.append(CommandArgument(value))
-        # TODO: use rect
-        if x is not None and y is not None and width is not None and height is not None:
-            self.append(CommandArgument(f"{x} {y} {width} {height}"))
+        if rect is not None:
+            self.append(CommandArgument(str(rect)))
 
 
 class fftd(BaseCommand):
     """
     .. code-block:: text
-    
+
         fftd modulus phase
-    
+
     Applies a Fast Fourier Transform to the loaded image. **modulus** and **phase** given in argument are the names of the saved in FITS files
     """
 
@@ -914,9 +924,9 @@ class fftd(BaseCommand):
 class ffti(BaseCommand):
     """
     .. code-block:: text
-    
+
         ffti modulus phase
-    
+
     Retrieves corrected image applying an inverse transformation. The **modulus** and **phase** arguments are the input file names, the result will be the new loaded image
     """
 
@@ -933,35 +943,33 @@ class ffti(BaseCommand):
 class fill(BaseCommand):
     """
     .. code-block:: text
-    
+
         fill value [x y width height]
-    
+
     Fills the loaded image entirely or only the selection if there is one with pixels having the **value** intensity expressed in ADU
     """
 
     def __init__(
         self,
         value: float,
-        x: t.Optional[int] = None,
-        y: t.Optional[int] = None,
-        width: t.Optional[int] = None,
-        height: t.Optional[int] = None,
+        rect: t.Optional[Rect] = None,
     ):
         super().__init__()
         self.append(CommandArgument(value))
-        # TODO: use rect
-        if x is not None and y is not None and width is not None and height is not None:
-            self.append(CommandArgument(f"{x} {y} {width} {height}"))
+        if rect is not None:
+            self.append(CommandArgument(str(rect)))
+
 
 class find_cosme(BaseCommand):
     """
     .. code-block:: text
-    
+
         find_cosme cold_sigma hot_sigma
-    
+
     Applies an automatic detection and replacement of cold and hot pixels in the loaded image, with the thresholds passed in arguments in sigma units
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         cold_sigma: float,
@@ -975,14 +983,15 @@ class find_cosme(BaseCommand):
 class find_cosme_cfa(BaseCommand):
     """
     .. code-block:: text
-    
+
         find_cosme_cfa cold_sigma hot_sigma
-    
+
     Same command as FIND_COSME but for CFA images
-    
+
     Links: :ref:`find_cosme <find_cosme>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         cold_sigma: float,
@@ -993,22 +1002,22 @@ class find_cosme_cfa(BaseCommand):
         self.append(CommandArgument(hot_sigma))
 
 
-
 class find_hot(BaseCommand):
     """
     .. code-block:: text
-    
+
         find_hot filename cold_sigma hot_sigma
-    
+
     Saves a list file **filename** (text format) in the working directory which contains the coordinates of the pixels which have an intensity **hot_sigma** times higher and **cold_sigma** lower than standard deviation, extracted from the loaded image. We generally use this command on a master-dark file. The COSME command can apply this list of bad pixels to a loaded image, see also SEQCOSME to apply it to a sequence
-    
+
     Links: :ref:`cosme <cosme>`, :ref:`seqcosme <seqcosme>`
-    
+
     Lines ``P x y type`` will fix the pixel at coordinates (x, y) type is an optional character (C or H) specifying to Siril if the current pixel is cold or hot. This line is created by the command FIND_HOT but you also can add some lines manually:
     Lines ``C x 0 type`` will fix the bad column at coordinates x.
     Lines ``L y 0 type`` will fix the bad line at coordinates y.
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         filename: str,
@@ -1024,9 +1033,9 @@ class find_hot(BaseCommand):
 class findcompstars(BaseCommand):
     """
     .. code-block:: text
-    
+
         findcompstars star_name [-narrow|-wide] [-catalog={nomad|apass}] [-dvmag=3] [-dbv=0.5] [-emag=0.03] [-out=nina_file.csv]
-    
+
     Automatically finds comparison stars in the field of the plate solved loaded image, for photometric analysis of a star's light curve according to
     - the provided name of the star
     - the field of view of the image, reduced to a diameter of its height if **-narrow** is passed, avoiding stars in the corners
@@ -1034,14 +1043,15 @@ class findcompstars(BaseCommand):
     - the difference in visual magnitude from the variable star, in the range [0, 6] with a default of 3, changed with **-dvmag=**
     - the difference in color with the variable star, in the range [0.0, 0.7] of their B-V indices with a default of 0.5, changed with **-dbv=**
     - the maximum allowed error on Vmag in the range [0.0, 0.1] with a default of 0.03, changed with **-emag=**.
-    
+
     The list can optionally be saved as a CSV file compatible with the NINA comparison stars list, specifying the file name with **-out=**. If the provided name is the special value **auto**, it is generated using the input parameters
-    
+
     See also LIGHT_CURVE
-    
+
     Links: :ref:`light_curve <light_curve>`
     """
 
+    # TODO: Review python types
     # TODO: Fix with enum types to match command
     def __init__(
         self,
@@ -1069,27 +1079,27 @@ class findcompstars(BaseCommand):
             self.append(CommandOption("out", out))
 
 
-
 class findstar(BaseCommand):
     """
     .. code-block:: text
-    
+
         findstar [-out=] [-layer=] [-maxstars=]
-    
+
     Detects stars in the currently loaded image, having a level greater than a threshold computed by Siril.
     After that, a PSF is applied and Siril rejects all detected structures that don't fulfill a set of prescribed detection criteria, that can be tuned with command SETFINDSTAR.
     Finally, an ellipse is drawn around detected stars.
-    
+
     Optional parameter **-out=** allows the results to be saved to the given path.
     Option **-layer=** specifies the layer onto which the detection is performed (for color images only).
     You can also limit the maximum number of stars detected by passing a value to option **-maxstars=**.
-    
-    
+
+
     See also CLEARSTAR
-    
+
     Links: :ref:`psf <psf>`, :ref:`setfindstar <setfindstar>`, :ref:`clearstar <clearstar>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         out: t.Optional[str] = None,
@@ -1102,15 +1112,14 @@ class findstar(BaseCommand):
         self.append(CommandOption("maxstars", maxstars))
 
 
-
 class fix_xtrans(BaseCommand):
     """
     .. code-block:: text
-    
+
         fix_xtrans
-    
+
     Fixes the Fujifilm X-Trans Auto Focus pixels in the loaded image.
-    
+
     Indeed, because of the phase detection auto focus system, the photosites used for auto focus get a little less light than the surrounding photosites. The camera compensates for this and increases the values from these specific photosites giving a visible square in the middle of the dark/bias frames
     """
 
@@ -1118,15 +1127,16 @@ class fix_xtrans(BaseCommand):
 class fixbanding(BaseCommand):
     """
     .. code-block:: text
-    
+
         fixbanding amount sigma [-vertical]
-    
+
     Tries to remove the horizontal or vertical banding in the loaded image.
     **amount** defines the amount of correction, between 0 and 4.
     **sigma** defines the highlight protection level of the algorithm, higher sigma gives higher protection, between 0 and 5. Values of 1 and 1 are often good enough.
     **-vertical** option enables to perform vertical banding removal, horizontal is the default
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         amount: int,
@@ -1143,14 +1153,15 @@ class fixbanding(BaseCommand):
 class fmedian(BaseCommand):
     """
     .. code-block:: text
-    
+
         fmedian ksize modulation
-    
+
     Performs a median filter of size **ksize** x **ksize** (**ksize** MUST be odd) to the loaded image with a modulation parameter **modulation**.
-    
+
     The output pixel is computed as : out=mod x m + (1 − mod) x in, where m is the median-filtered pixel value. A modulation's value of 1 will apply no modulation
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         ksize: int,
@@ -1164,9 +1175,9 @@ class fmedian(BaseCommand):
 class fmul(BaseCommand):
     """
     .. code-block:: text
-    
+
         fmul scalar
-    
+
     Multiplies the loaded image by the **scalar** given in argument
     """
 
@@ -1181,13 +1192,13 @@ class fmul(BaseCommand):
 class gauss(BaseCommand):
     """
     .. code-block:: text
-    
+
         gauss sigma
-    
+
     Applies to the loaded image a Gaussian blur with the given **sigma**.
-    
+
     See also UNSHARP, the same with a blending parameter
-    
+
     Links: :ref:`unsharp <unsharp>`
     """
 
@@ -1202,16 +1213,17 @@ class gauss(BaseCommand):
 class get(BaseCommand):
     """
     .. code-block:: text
-    
+
         get { -a | -A | variable }
-    
+
     Gets a value from the settings using its name, or list all with **-a** (name and value list) or with **-A** (detailed list)
-    
+
     See also SET to update values
-    
+
     Links: :ref:`set <set>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         list_all: bool = False,
@@ -1226,12 +1238,13 @@ class get(BaseCommand):
         elif list_all and detailed:
             self.append(CommandFlag("A", detailed))
 
+
 class getref(BaseCommand):
     """
     .. code-block:: text
-    
+
         getref sequencename
-    
+
     Prints information about the reference image of the sequence given in argument. First image has index 0
     """
 
@@ -1243,15 +1256,14 @@ class getref(BaseCommand):
         self.append(CommandArgument(sequencename))
 
 
-
 class ght(BaseCommand):
     """
     .. code-block:: text
-    
+
         ght -D= [-B=] [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels]
-    
+
     Generalised hyperbolic stretch based on the work of the ghsastro.co.uk team.
-    
+
     The argument **-D=** defines the strength of the stretch, between 0 and 10. This is the only mandatory argument. The following optional arguments further tailor the stretch:
     **B** defines the intensity of the stretch near the focal point, between -5 and 15;
     **LP** defines a shadow preserving range between 0 and SP where the stretch will be linear, preserving shadow detail;
@@ -1262,6 +1274,7 @@ class ght(BaseCommand):
     Optionally the parameter **[channels]** may be used to specify the channels to apply the stretch to: this may be R, G, B, RG, RB or GB. The default is all channels. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         D: float,
@@ -1300,16 +1313,17 @@ class ght(BaseCommand):
         if channels is not None:
             self.append(CommandArgument(channels))
 
+
 class graxpert_bg(BaseCommand):
     """
     .. code-block:: text
-    
+
         graxpert_bg [-algo=] [-mode=] [-kernel=] [-ai_batch_size=] [-pts_per_row=] [-splineorder=] [-samplesize=] [-smoothing=] [-bgtol=] [ { -gpu | -cpu } ] [-ai_version=] [-keep_bg]
-    
+
     Runs the external tool GraXpert in background extraction mode.
-    
+
     The following optional arguments may be provided:
-    
+
     **-algo=** sets the background removal algorithm and must be one of **ai**, **rbf**, **kriging** or **spline**;
     **-mode=** sets the background extraction mode and must be one of **sub** or **div**;
     **-kernel=** sets the RBF kernel and must be one of **thinplate**, **quintic**, **cubic** or **linear**;
@@ -1324,6 +1338,7 @@ class graxpert_bg(BaseCommand):
     **-ai_batch_size=** sets the batch size for AI operations (denoising and the background removal AI algorithm) (default = 4: bigger batch sizes may improve performance, especially on CPU, but require more memory). The optional argument **-ai_version=** forces a specific version of the AI model. Note that GraXpert AI background removal is comparatively fast anyway so at present there is little need to specify an older model for speed reasons even if running in CPU-only mode. If this argument is omitted, the latest available AI model version is used
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         algo: t.Optional[str] = None,
@@ -1369,22 +1384,22 @@ class graxpert_bg(BaseCommand):
             self.append(CommandFlag("keep_bg", keep_bg))
 
 
-
 class graxpert_denoise(BaseCommand):
     """
     .. code-block:: text
-    
+
         graxpert_denoise [-strength=] [ { -gpu | -cpu } [-ai_version=] ]
-    
+
     Runs the external tool GraXpert in denoising mode.
-    
+
     The following optional arguments may be provided:
-    
+
     **-strength=** sets the denoising strength, between 0.0 and 1.0 (default = 0.8);
     **-gpu** sets GraXpert to use a GPU if available (and otherwise fall back to CPU);
     **-ai_batch_size=** sets the batch size for AI operations (denoising and the background removal AI algorithm) (default = 4: bigger batch sizes may improve performance, especially on CPU, but require more memory). The optional argument **-ai_version=** forces a specific version of the AI model. For CPU-only usage the latest models may run very slowly, in which case an older model version such as 2.0.0 may provide a more acceptable balance between performance and runtime. If this argument is omitted, the latest available AI model version is used
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         strength: t.Optional[float] = None,
@@ -1407,9 +1422,9 @@ class graxpert_denoise(BaseCommand):
 class grey_flat(BaseCommand):
     """
     .. code-block:: text
-    
+
         grey_flat
-    
+
     Equalizes the mean intensity of RGB layers in the loaded CFA image. This is the same process used on flats during calibration when the option equalize CFA is used
     """
 
@@ -1417,9 +1432,9 @@ class grey_flat(BaseCommand):
 class help(BaseCommand):
     """
     .. code-block:: text
-    
+
         help [command]
-    
+
     Lists the available commands or help for one command
     """
 
@@ -1432,13 +1447,14 @@ class help(BaseCommand):
 class histo(BaseCommand):
     """
     .. code-block:: text
-    
+
         histo channel (channel=0, 1, 2 with 0: red, 1: green, 2: blue)
-    
+
     Calculates the histogram of the **layer** of the loaded image and produces file histo\_[channel name].dat in the working directory.
     layer = 0, 1 or 2 with 0=red, 1=green and 2=blue
     """
 
+    # TODO: Review python types
     def __init__(self, channel: int):
         super().__init__()
         # TODO: confirm this command
@@ -1448,9 +1464,9 @@ class histo(BaseCommand):
 class iadd(BaseCommand):
     """
     .. code-block:: text
-    
+
         iadd filename
-    
+
     Adds the image **filename** to the loaded image.
     Result will be in 32 bits per channel if allowed in the preferences
     """
@@ -1463,9 +1479,9 @@ class iadd(BaseCommand):
 class icc_assign(BaseCommand):
     """
     .. code-block:: text
-    
+
         icc_assign profile
-    
+
     Assigns the ICC profile specified in the argument to the current image.
     One of the following special arguments may be provided to use the respective built-in profiles: **sRGB**, **sRGBlinear**, **Rec2020**, **Rec2020linear**, **working** to set the working mono or RGB color profile, (for mono images only) **linear**, or the path to an ICC profile file may be provided. If a built-in profile is specified with a monochrome image loaded, the Gray profile with the corresponding TRC will be used
     """
@@ -1478,12 +1494,12 @@ class icc_assign(BaseCommand):
 class icc_convert_to(BaseCommand):
     """
     .. code-block:: text
-    
+
         icc_convert_to profile [intent]
-    
+
     Converts the current image to the specified ICC profile.
     One of the following special arguments may be provided to use the respective built-in profiles: **sRGB**, **sRGBlinear**, **Rec2020**, **Rec2020linear**, **graysrgb**, **grayrec2020**, **graylinear** or **working** to set the working mono or RGB color profile, (for mono images only) **linear**, or the path to an ICC profile file may be provided. If a built-in profile is specified with a monochrome image loaded, the Gray profile with the corresponding TRC will be used.
-    
+
     A second argument may be provided to specify the color transform intent: this should be one of **perceptual**, **relative** (for relative colorimetric), **saturation** or **absolute** (for absolute colorimetric)
     """
 
@@ -1493,12 +1509,13 @@ class icc_convert_to(BaseCommand):
         if intent is not None:
             self.append(CommandArgument(intent))
 
+
 class icc_remove(BaseCommand):
     """
     .. code-block:: text
-    
+
         icc_remove
-    
+
     Removes the ICC profile from the current image, if it has one
     """
 
@@ -1506,14 +1523,14 @@ class icc_remove(BaseCommand):
 class idiv(BaseCommand):
     """
     .. code-block:: text
-    
+
         idiv filename
-    
+
     Divides the loaded image by the image **filename**.
     Result will be in 32 bits per channel if allowed in the preferences.
-    
+
     See also FDIV
-    
+
     Links: :ref:`fdiv <fdiv>`
     """
 
@@ -1525,9 +1542,9 @@ class idiv(BaseCommand):
 class imul(BaseCommand):
     """
     .. code-block:: text
-    
+
         imul filename
-    
+
     Multiplies image **filename** by the loaded image.
     Result will be in 32 bits per channel if allowed in the preferences
     """
@@ -1540,14 +1557,15 @@ class imul(BaseCommand):
 class invght(BaseCommand):
     """
     .. code-block:: text
-    
+
         invght -D= [-B=] [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels]
-    
+
     Inverts a generalised hyperbolic stretch. It provides the inverse transformation of GHT, if provided with the same parameters, undoes a GHT command, possibly returning to a linear image. It can also work the same way as GHT but for images in negative
-    
+
     Links: :ref:`ght <ght>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         D: t.Optional[float] = None,
@@ -1591,14 +1609,15 @@ class invght(BaseCommand):
 class invmodasinh(BaseCommand):
     """
     .. code-block:: text
-    
+
         invmodasinh -D= [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels]
-    
+
     Inverts a modified arcsinh stretch. It provides the inverse transformation of MODASINH, if provided with the same parameters, undoes a MODASINH command, possibly returning to a linear image. It can also work the same way as MODASINH but for images in negative
-    
+
     Links: :ref:`modasinh <modasinh>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         D: t.Optional[float] = None,
@@ -1639,14 +1658,15 @@ class invmodasinh(BaseCommand):
 class invmtf(BaseCommand):
     """
     .. code-block:: text
-    
+
         invmtf low mid high [channels]
-    
+
     Inverts a midtones transfer function. It provides the inverse transformation of MTF, if provided with the same parameters, undoes a MTF command, possibly returning to a linear image. It can also work the same way as MTF but for images in negative
-    
+
     Links: :ref:`mtf <mtf>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         low: t.Optional[float] = None,
@@ -1668,12 +1688,12 @@ class invmtf(BaseCommand):
 class isub(BaseCommand):
     """
     .. code-block:: text
-    
+
         isub filename
-    
+
     Subtracts the loaded image by the image **filename**.
     Result will be in 32 bits per channel if allowed in the preferences, so capable of storing negative values. To clip negative value, use 16 bit mode or use the THRESHLO command
-    
+
     Links: :ref:`threshlo <threshlo>`
     """
 
@@ -1685,12 +1705,13 @@ class isub(BaseCommand):
 class jsonmetadata(BaseCommand):
     """
     .. code-block:: text
-    
+
         jsonmetadata FITS_file [-stats_from_loaded] [-nostats] [-out=]
-    
+
     Dumps metadata and statistics of the currently loaded image in JSON form. The file name is required, even if the image is already loaded. Image data may not be read from the file if it is the current loaded image and if the **-stats_from_loaded** option is passed. Statistics can be disabled by providing the **-nostats** option. A file containing the JSON data is created with default file name '$(FITS_file_without_ext).json' and can be changed with the **-out=** option
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         FITS_file: str,
@@ -1711,21 +1732,22 @@ class jsonmetadata(BaseCommand):
 class light_curve(BaseCommand):
     """
     .. code-block:: text
-    
+
         light_curve sequencename channel [-autoring] { -at=x,y | -wcs=ra,dec } { -refat=x,y | -refwcs=ra,dec } ...
         light_curve sequencename channel [-autoring] -ninastars=file
-    
+
     Analyses several stars with aperture photometry in a sequence of images and produces a light curve for one, calibrated by the others. The first coordinates, in pixels if **-at=** is used or in degrees if **-wcs=** is used, are for the star whose light will be plotted, the others for the comparison stars.
     Alternatively, a list of target and reference stars can be passed in the format of the NINA exoplanet plugin star list, with the **-ninastars=** option. Siril will verify that all reference stars can be used before actually using them. A data file is created in the current directory named light_curve.dat, Siril plots the result to a PNG image if available
     The ring radii for the annulus can either be configured in the settings or set to a factor of the reference image's FWHM if **-autoring** is passed. These autoring sizes are 4.2 time and 6.3 times the FWHM for the inner and outer radii, respectively.
-    
+
     See also the **setphot** command to set the same way the aperture radius size.
-    
+
     See also SEQPSF for operations on single star
-    
+
     Links: :ref:`seqpsf <seqpsf>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         sequencename: str,
@@ -1757,18 +1779,19 @@ class light_curve(BaseCommand):
 class limit(BaseCommand):
     """
     .. code-block:: text
-    
+
         limit { -clip | -posrescale | -rescale }
-    
+
     Limits pixel values in 32-bit images to the range 0.0 to 1.0. This command does not apply to 16-bit images as there cannot be out-of-range values. Range limiting can be done in one of the following ways:
-    
+
     **-clip**: this option simply clips all negative pixels to 0.0 and all pixels with a value > 1.0 to 1.0.
     **-posrescale**: this option scales all positive pixel values so that the maximum value is 1.0, clipping any negative pixels to 0.0. For 3-channel images the same scaling factor is applied to all channels. If the maximum pixel value is already <= 1.0 negative pixels will still be clipped but no scaling factor will be applied to positive pixels.
     **-rescale**: using this option, if there are any negative pixel values the image will have a constant value added to all pixel values so that the minimum value is 0.0. Then if the maximum pixel value is > 1.0, a scaling factor is applied so that the maximum pixel value is scaled to 1.0.
-    
+
     Note that if there are one or more extreme outliers (for example as a result of bad pixels) the **-rescale** and **-posrescale** options may produce an unexpected result. This can be mitigated by applying cosmetic correction to the image first
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         clip: t.Optional[bool] = None,
@@ -1788,11 +1811,11 @@ class limit(BaseCommand):
 class linear_match(BaseCommand):
     """
     .. code-block:: text
-    
+
         linear_match reference low high
-    
+
     Computes and applies a linear function between a **reference** image and the loaded image.
-    
+
     The algorithm will ignore all reference pixels whose values are outside of the [**low**, **high**] range
     """
 
@@ -1811,14 +1834,15 @@ class linear_match(BaseCommand):
 class link(BaseCommand):
     """
     .. code-block:: text
-    
+
         link basename [-date] [-start=index] [-out=]
-    
+
     Same as CONVERT but converts only FITS files found in the current working directory. This is useful to avoid conversions of JPEG results or other files that may end up in the directory. The additional argument **-date** enables sorting files with their DATE-OBS value instead of with their name alphanumerically
-    
+
     Links: :ref:`convert <convert>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         basename: str,
@@ -1839,14 +1863,15 @@ class link(BaseCommand):
 class linstretch(BaseCommand):
     """
     .. code-block:: text
-    
+
         linstretch -BP= [-sat] [-clipmode=] [channels] [-clipmode=]
-    
+
     Stretches the image linearly to a new black point BP.
     The argument **[channels]** may optionally be used to specify the channels to apply the stretch to: this may be R, G, B, RG, RB or GB. The default is all channels.
     Optionally the parameter **-sat** may be used to apply the linear stretch to the image saturation channel. This argument only works if all channels are selected. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         BP: float,
@@ -1867,18 +1892,18 @@ class linstretch(BaseCommand):
 class livestack(BaseCommand):
     """
     .. code-block:: text
-    
+
         livestack filename
-    
+
     Process the provided image for live stacking. Only possible after START_LS. The process involves calibrating the incoming file if configured in START_LS, demosaicing if it's an OSC image, registering and stacking. The temporary result will be in the file live_stack_00001.fit until a new option to change it is added
-    
+
     Links: :ref:`start_ls <start_ls>`
-    
+
     .. warning::
-    
-        Note that the live stacking commands put Siril in a state in which it's not 
-        able to process other commands. After START_LS, only LIVESTACK, STOP_LS and 
-        EXIT can be called until STOP_LS is called to return Siril in its normal, 
+
+        Note that the live stacking commands put Siril in a state in which it's not
+        able to process other commands. After START_LS, only LIVESTACK, STOP_LS and
+        EXIT can be called until STOP_LS is called to return Siril in its normal,
         non-live-stacking, state.
     """
 
@@ -1890,9 +1915,9 @@ class livestack(BaseCommand):
 class load(BaseCommand):
     """
     .. code-block:: text
-    
+
         load filename[.ext]
-    
+
     Loads the image **filename** from the current working directory, which becomes the 'currently loaded image' used in many of the single-image commands.
     It first attempts to load **filename**, then **filename**.fit, **filename**.fits and finally all supported formats.
     This scheme is applicable to every Siril command that involves reading files
@@ -1906,9 +1931,9 @@ class load(BaseCommand):
 class log(BaseCommand):
     """
     .. code-block:: text
-    
+
         log
-    
+
     Computes and applies a logarithmic scale to the loaded image, using the following formula: log(1 - (value - min) / (max - min)), with min and max being the minimum and maximum pixel value for the channel
     """
 
@@ -1916,42 +1941,43 @@ class log(BaseCommand):
 class makepsf(BaseCommand):
     """
     .. code-block:: text
-    
+
         makepsf clear
         makepsf load filename
         makepsf save [filename]
         makepsf blind [-l0] [-si] [-multiscale] [-lambda=] [-comp=] [-ks=] [-savepsf=]
         makepsf stars [-sym] [-ks=] [-savepsf=]
         makepsf manual { -gaussian | -moffat | -disc | -airy } [-fwhm=] [-angle=] [-ratio=] [-beta=] [-dia=] [-fl=] [-wl=] [-pixelsize=] [-obstruct=] [-ks=] [-savepsf=]
-    
+
     Generates a PSF for use with deconvolution, any of the three methods exposed by RL, SB or WIENER commands. One of the following must be given as the first argument: **clear** (clears the existing PSF), **load** (loads a PSF from a file), **save** (saves the current PSF), **blind** (blind estimate of tke PSF), **stars** (generates a PSF based on measured stars from the image) or **manual** (generates a PSF manually based on a function and parameters).
-    
+
     No additional arguments are required when using the **clear** argument.
-    
+
     To load a previously saved PSF the **load** argument requires the PSF *filename* as a second argument. This may be in any format that Siril has been compiled with support for, but it must be square and should ideally be odd.
-    
+
     To save a previously generated PSF the argument **save** is used. Optionally, a filename may be provided (this must have one of the extensions ".fit", ".fits", ".fts" or ".tif") but if none is provided the PSF will be named based on the name of the open file or sequence.
-    
+
     For **blind**, the following optional arguments may be provided: **-l0** uses the l0 descent method, **-si** uses the spectral irregularity method, **-multiscale** configures the l0 method to do a multi-scale PSF estimate, **-lambda=** provides the regularization constant.
-    
+
     For PSF from detected **stars** the only optional parameter is **-sym**, which configures the PSF to be symmetric.
-    
+
     For a **manual** PSF, one of **-gaussian**, **-moffat**, **-disc** or **-airy** can be provided to specify the PSF function, Gaussian by default. For Gaussian or Moffat PSFs the optional arguments **-fwhm=**, **-angle=** and **-ratio=** may be provided. For Moffat PSFs the optional argument **-beta=** may also be provided. If these values are omitted, they default to the same values as in the deconvolution dialog. For disc PSFs only the argument **-fwhm=** is required, which for this function is used to set the *diameter* of the PSF. For Airy PSFs the following arguments may be provided: **-dia=** (sets the telescope diameter), **-fl=** (sets the telescope focal length), **-wl=** (sets the wavelength to calculate the Airy diffraction pattern for), **-pixelsize=** (sets the sensor pixel size), **-obstruct=** (sets the central obstruction as a percentage of the overall aperture area). If these parameters are not provided, wavelength will default to 525nm and central obstruction will default to 0%. Siril will attempt to read the others from the open image, but some imaging software may not provide all of them in which case you will get bad results, and note the metadata may not be populated for SER format videos. You will learn from experience which are safe to omit for your particular imaging setup.
-    
+
     For any of the above PSF generation options the optional argument **-ks=** may be provided to set the PSF dimension, and the optional argument **-savepsf=\ filename** may be used to save the generated PSF: a filename must be provided and the same filename extension requirements apply as for **makepsf save filename**
-    
+
     Links: :ref:`psf <psf>`, :ref:`rl <rl>`, :ref:`sb <sb>`, :ref:`wiener <wiener>`
     """
 
+    # TODO: Review python types
     # TODO: Implement makepsf (complicated)
 
 
 class merge(BaseCommand):
     """
     .. code-block:: text
-    
+
         merge sequence1 sequence2 [sequence3 ...] output_sequence
-    
+
     Merges several sequences of the same type (FITS images, FITS sequence or SER) and same image properties into a new sequence with base name **newseq** created in the current working directory, with the same type. The input sequences can be in different directories, can specified either in absolute or relative path, with the exact .seq name or with only the base name with or without the trailing '\_'
     """
 
@@ -1975,12 +2001,13 @@ class merge(BaseCommand):
 class merge_cfa(BaseCommand):
     """
     .. code-block:: text
-    
+
         merge_cfa file_CFA0 file_CFA1 file_CFA2 file_CFA3 bayerpattern
-    
+
     Builds a Bayer masked color image from 4 separate images containing the data from Bayer subchannels CFA0, CFA1, CFA2 and CFA3. (The corresponding command to split the CFA pattern into subchannels is **split_cfa**.) This function can be used as part of a workflow applying some processing to the individual Bayer subchannels prior to demosaicing. The fifth parameter **bayerpattern** specifies the Bayer matrix pattern to recreate: **bayerpattern** should be one of 'RGGB', 'BGGR', 'GRBG' or 'GBRG'
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         file_CFA0: str,
@@ -2000,9 +2027,9 @@ class merge_cfa(BaseCommand):
 class mirrorx(BaseCommand):
     """
     .. code-block:: text
-    
+
         mirrorx [-bottomup]
-    
+
     Flips the loaded image about the horizontal axis. Option **-bottomup** will only flip it if it's not already bottom-up
     """
 
@@ -2014,9 +2041,9 @@ class mirrorx(BaseCommand):
 class mirrorx_single(BaseCommand):
     """
     .. code-block:: text
-    
+
         mirrorx_single image
-    
+
     Flips the image about the horizontal axis, only if needed (if it's not already bottom-up). It takes the image file name as argument, allowing it to avoid reading image data entirely if no flip is required. Image is overwritten if a flip is made
     """
 
@@ -2028,9 +2055,9 @@ class mirrorx_single(BaseCommand):
 class mirrory(BaseCommand):
     """
     .. code-block:: text
-    
+
         mirrory
-    
+
     Flips the image about the vertical axis
     """
 
@@ -2038,11 +2065,11 @@ class mirrory(BaseCommand):
 class modasinh(BaseCommand):
     """
     .. code-block:: text
-    
+
         modasinh -D= [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels]
-    
+
     Modified arcsinh stretch based on the work of the ghsastro.co.uk team.
-    
+
     The argument **-D=** defines the strength of the stretch, between 0 and 10. This is the only mandatory argument. The following optional arguments further tailor the stretch:
     **LP** defines a shadow preserving range between 0 and SP where the stretch will be linear, preserving shadow detail;
     **SP** defines the symmetry point of the stretch, between 0 and 1, which is the point at which the stretch will be most intense;
@@ -2052,6 +2079,7 @@ class modasinh(BaseCommand):
     Optionally the parameter **[channels]** may be used to specify the channels to apply the stretch to: this may be R, G, B, RG, RB or GB. The default is all channels. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         D: float,
@@ -2083,17 +2111,18 @@ class modasinh(BaseCommand):
 class mtf(BaseCommand):
     """
     .. code-block:: text
-    
+
         mtf low mid high [channels]
-    
+
     Applies midtones transfer function to the current loaded image.
-    
+
     Three parameters are needed, **low**, **midtones** and **high** where midtones balance parameter defines a nonlinear histogram stretch in the [0,1] range. For an automatic determination of the parameters, see AUTOSTRETCH.
     Optionally the parameter **[channels]** may be used to specify the channels to apply the stretch to: this may be R, G, B, RG, RB or GB. The default is all channels
-    
+
     Links: :ref:`autostretch <autostretch>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         low: float,
@@ -2108,12 +2137,13 @@ class mtf(BaseCommand):
         # TODO: make an enum for these channels
         self.append(CommandArgument(channels))
 
+
 class neg(BaseCommand):
     """
     .. code-block:: text
-    
+
         neg
-    
+
     Changes pixel values of the currently loaded image to a negative view, like 1-value for 32 bits, 65535-value for 16 bits. This does not change the display mode
     """
 
@@ -2121,9 +2151,9 @@ class neg(BaseCommand):
 class nozero(BaseCommand):
     """
     .. code-block:: text
-    
+
         nozero level
-    
+
     Replaces null values by **level** values. Useful before an idiv or fdiv operation, mostly for 16-bit images
     """
 
@@ -2135,9 +2165,9 @@ class nozero(BaseCommand):
 class offline(BaseCommand):
     """
     .. code-block:: text
-    
+
         offline
-    
+
     Sets Siril to offline mode. In this mode networking functions such as remote catalogue lookups, update of git repositories etc. are unavailable. Cached data is still accessible
     """
 
@@ -2145,11 +2175,11 @@ class offline(BaseCommand):
 class offset(BaseCommand):
     """
     .. code-block:: text
-    
+
         offset value
-    
+
     Adds the constant **value** (specified in ADU) to the current image. This constant can take a negative value.
-    
+
     In 16-bit mode, values of pixels that fall outside of [0, 65535] are clipped. In 32-bit mode, no clipping occurs
     """
 
@@ -2161,9 +2191,9 @@ class offset(BaseCommand):
 class online(BaseCommand):
     """
     .. code-block:: text
-    
+
         online
-    
+
     Sets Siril to online mode. In this mode networking functions such as remote catalogue lookups, update of git repositories etc. is allowed
     """
 
@@ -2171,12 +2201,12 @@ class online(BaseCommand):
 class parse(BaseCommand):
     """
     .. code-block:: text
-    
+
         parse str [-r]
-    
+
     Parses the string **str** using the information contained in the header of the image currently loaded. Main purpose of this command is to debug path parsing of header keys which can be used in other commands.
     Option **-r** specifies the string is to be interpreted in read mode. In read mode, all wilcards defined in string **str** are used to find a file name matching the pattern. Otherwise, default mode is write mode and wildcards, if any, are removed from the string to be parsed.
-    
+
     If **str** starts with *$def* prefix, it will be recognized as a reserved keyword and looked for in the strings stored in gui_prepro.dark_lib, gui_prepro.flat_lib, gui_prepro.bias_lib or gui_prepro.stack_default for *$defdark*, *$defflat*, *$defbias* or *$defstack* respectively.
     The keyword *$seqname$* can also be used when a sequence is loaded
     """
@@ -2190,16 +2220,17 @@ class parse(BaseCommand):
 class pcc(BaseCommand):
     """
     .. code-block:: text
-    
+
         pcc [-limitmag=[+-]] [-catalog=] [-bgtol=lower,upper]
-    
+
     Run the Photometric Color Correction on the loaded plate-solved image.
-    
+
     The limit magnitude of stars is automatically computed from the size of the field of view, but can be altered by passing a +offset or -offset value to **-limitmag=**, or simply an absolute positive value for the limit magnitude.
     The star catalog used is NOMAD by default, it can be changed by providing **-catalog=apass**, **-catalog=localgaia** or **-catalog=gaia**. If installed locally, the remote NOMAD (the complete version) can be forced by providing **-catalog=nomad**
     Background reference outlier tolerance can be specified in sigma units using **-bgtol=lower,upper**: these default to -2.8 and +2.0
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         limit_mag: magnitude_option = magnitude_option.DEFAULT_MAGNITUDE,
@@ -2224,34 +2255,35 @@ class pcc(BaseCommand):
 class platesolve(BaseCommand):
     """
     .. code-block:: text
-    
+
         platesolve [-force] [image_center_coords] [-focal=] [-pixelsize=]
         platesolve sequencename ... [-noflip] [-downscale] [-order=] [-radius=] [-disto=]
         platesolve sequencename ... [-limitmag=[+-]] [-catalog=] [-nocrop]
         platesolve sequencename ... [-localasnet [-blindpos] [-blindres]]
-    
+
     Plate solve the loaded image.
     If the image has already been plate solved nothing will be done, unless the **-force** argument is passed to force a new solve. If WCS or other image metadata is erroneous or missing, arguments must be passed:
     the approximate image center coordinates can be provided in decimal degrees or degree/hour minute second values (J2000 with colon separators), with right ascension and declination values separated by a comma or a space (not mandatory for astrometry.net).
     focal length and pixel size can be passed with **-focal=** (in mm) and **-pixelsize=** (in microns), overriding values from image and settings. See also options to solve blindly with local Astrometry.net
-    
+
     Unless **-noflip** is specified, if the image is detected as being upside-down, it will be flipped.
     For faster star detection in big images, downsampling the image is possible with **-downscale**.
     The solve can account for distortions using SIP convention with polynomials up to order 5. Default value is taken form the astrometry preferences. This can be changed with the option **-order=** giving a value between 1 and 5.
     When using Siril solver local catalogues or with local Astrometry.net, if the initial solve is not successful, the solver will search for a solution within a cone of radius specified with **-radius=** option. If no value is passed, the search radius is taken from the astrometry preferences. Siril near search can be disabled by passing a value of 0. (cannot be disabled for Astrometry.net).
     You can save the current solution as a distortion file with the option **-disto=**.
-    
+
     Images can be either plate solved by Siril using a star catalog and the global registration algorithm or by astrometry.net's local solve-field command (enabled with **-localasnet**).
-    
+
     **Siril platesolver options:**
     The limit magnitude of stars used for plate solving is automatically computed from the size of the field of view, but can be altered by passing a +offset or -offset value to **-limitmag=**, or simply an absolute positive value for the limit magnitude.
     The choice of the star catalog is automatic unless the **-catalog=** option is passed: if local catalogs are installed, they are used, otherwise the choice is based on the field of view and limit magnitude. If the option is passed, it forces the use of the catalog given in argument, with possible values: tycho2, nomad, localgaia, gaia, ppmxl, brightstars, apass.
     If the computed field of view is larger than 5 degrees, star detection will be bounded to a cropped area around the center of the image unless **-nocrop** option is passed.
-    
+
     **Astrometry.net solver options:**
     Passing options **-blindpos** and/or **-blindres** enables to solve blindly for position and for resolution respectively. You can use these when solving an image with a completely unknown location and sampling
     """
 
+    # TODO: Review python types
     # TODO: Add support for -order=, -radius=, -disto=, -nocrop, -blindpos, -blindres
     # TODO: Fix to match original usage
     def __init__(
@@ -2275,7 +2307,7 @@ class platesolve(BaseCommand):
         if image_center is not None:
             self.append(CommandArgument(image_center))
         self.append(CommandFlag("noflip", noflip))
-        
+
         self.append(CommandOption("focal", focal_length))
         self.append(CommandOption("pixelsize", pixel_size))
         if limit_mag == magnitude_option.MAGNITUDE_OFFSET and magnitude_value != 0.0:
@@ -2295,13 +2327,14 @@ class platesolve(BaseCommand):
 class pm(BaseCommand):
     """
     .. code-block:: text
-    
+
         pm "expression" [-rescale [low] [high]] [-nosum]
-    
+
     This command evaluates the expression given in argument as in PixelMath tool. The full expression must be between double quotes and variables (that are image names, without extension, located in the working directory in that case) must be surrounded by the token $, e.g. "$image1$ \* 0.5 + $image2$ \* 0.5". A maximum of 10 images can be used in the expression.
     Image can be rescaled with the option **-rescale** followed by **low** and **high** values in the range [0, 1]. If no low and high values are provided, default values are set to 0 and 1. Another optional argument, **-nosum** tells Siril not to sum exposure times. This impacts FITS keywords such as LIVETIME and STACKCNT
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         expression: str,
@@ -2318,22 +2351,23 @@ class pm(BaseCommand):
 class profile(BaseCommand):
     """
     .. code-block:: text
-    
+
         profile -from=x,y -to=x,y [-tri] [-cfa] [-arcsec] { [-savedat] | [-filename=] } [-layer=] [-width=] [-spacing=] ["-title=My Plot"]
-    
+
     Generates an intensity profile plot between 2 points in the image, also known as a *cut*. The arguments may be provided in any order. The arguments **-to=x,y** and **-from=x,y** are mandatory.
-    
+
     The argument **-layer=\ {red \| green \| blue \| lum \| col}** specifies which channel (or luminance or colour) to plot if the image is color. It may also be used with the **-tri** option, which generates 3 parallel equispaced profiles each separated by **-spacing=** pixels, but note that for tri profiles the **col** option will be treated the same as **lum**.
-    
+
     The option **-cfa** selects CFA mode, which generates 4 profiles: 1 for each CFA channel in a Bayer patterned image. This option cannot be used with color images or mono images with no Bayer pattern, and cannot be used at the same time as the **-tri** option.
-    
+
     The option **-arcsec** causes the x axis to display distance in arcsec, if the necessary metadata is available. If not provided or if metadata is not available, distance will be shown in pixel units.
-    
+
     The argument **-savedat** will cause the data files to be saved: the filename will be written to the log. Alternatively the argument **-filename=** can be used to specify a filename to write the data file to. (The **-filename=** option implies **-savedat**.)
-    
+
     The argument **"-title=\ My Title"** sets a custom title "My Title"
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         from_x: int,
@@ -2377,11 +2411,11 @@ class profile(BaseCommand):
 class psf(BaseCommand):
     """
     .. code-block:: text
-    
+
         psf [channel]
-    
+
     Performs a PSF (Point Spread Function) on the selected star and display the results. For headless operation, the selection can be given in pixels using BOXSELECT. If provided, the **channel** argument selects the image channel on which the star will be analyzed. It can be omitted for monochrome images or when run from the GUI with one of the channels active in the view
-    
+
     Links: :ref:`boxselect <boxselect>`
     """
 
@@ -2397,9 +2431,9 @@ class psf(BaseCommand):
 class pwd(BaseCommand):
     """
     .. code-block:: text
-    
+
         pwd
-    
+
     Prints the current working directory
     """
 
@@ -2407,11 +2441,11 @@ class pwd(BaseCommand):
 class pyscript(BaseCommand):
     """
     .. code-block:: text
-    
+
         pyscript scriptname.py [script_argv]
-    
+
     Executes a Siril python script
-    
+
     The script name must be provided as the first argument. If it is not found in the current working directory, the user-defined script paths specified in Preferences and the local siril-scripts repository will be searched. All subsequent arguments will be treated as script arguments and passed to the script as its argument vector. Note that the specific script must incorporate support for reading input from the argument vector
     """
 
@@ -2430,45 +2464,46 @@ class pyscript(BaseCommand):
 class register(BaseCommand):
     """
     .. code-block:: text
-    
+
         register sequencename [-2pass] [-selected] [-prefix=] [-scale=]
         register sequencename ... [-layer=] [-transf=] [-minpairs=] [-maxstars=] [-nostarlist] [-disto=]
         register sequencename ... [-interp=] [-noclamp]
         register sequencename ... [-drizzle [-pixfrac=] [-kernel=] [-flat=]]
-    
+
     Finds and optionally performs geometric transforms on images of the sequence given in argument so that they may be superimposed on the reference image. Using stars for registration, this algorithm only works with deep sky images. Star detection options can be changed using **SETFINDSTAR** or the *Dynamic PSF* dialog.
-    
+
     All images of the sequence will be registered unless the option **-selected** is passed, in that case the excluded images will not be processed.
     The **-2pass** option will only compute the transforms but not generate the transformed images, **-2pass** adds a preliminary pass to the algorithm to find a good reference image before computing the transforms, based on image quality and framing. To generate transformed images after this pass, use SEQAPPLYREG.
     If created, the output sequence name will start with the prefix "r\_" unless otherwise specified with **-prefix=** option. The output images can be rescaled by passing a **-scale=** argument with a float value between 0.1 and 3.
-    
+
     **Image transformation options:**
-    
+
     The detection is done on the green layer for colour images, unless specified by the **-layer=** option with an argument ranging from 0 to 2 for red to blue.
     **-transf=** specifies the use of either **shift**, **similarity**, **affine** or **homography** (default) transformations respectively.
     **-minpairs=** will specify the minimum number of star pairs a frame must have with the reference frame, otherwise the frame will be dropped and excluded from the sequence.
     **-maxstars=** will specify the maximum number of stars to find within each frame (must be between 100 and 2000). With more stars, a more accurate registration can be computed, but will take more time to run.
     **-nostarlist** disables saving the star lists to disk.
     **-disto=** uses distortion terms from a previous platesolve solution (with a SIP order > 1). It takes as parameter either **image** to use the solution contained in the currently loaded image, **file** followed by the path to the image containing the solution or **master** to load automatically the matching distortion master corresponding to each image. When using this option, the polynomials are used both to correct star positions before computing the transformation and to undistort the images when output images are exported.
-    
+
     **Image interpolation options:**
-    
+
     By default, transformations are applied to register the images by using interpolation.
     The pixel interpolation method can be specified with the **-interp=** argument followed by one of the methods in the list **no**\ [ne], **ne**\ [arest], **cu**\ [bic], **la**\ [nczos4], **li**\ [near], **ar**\ [ea]}. If **none** is passed, the transformation is forced to shift and a pixel-wise shift is applied to each image without any interpolation.
     Clamping of the bicubic and lanczos4 interpolation methods is the default, to avoid artefacts, but can be disabled with the **-noclamp** argument.
-    
+
     **Image drizzle options:**
-    
+
     Otherwise, the images can be exported using HST drizzle algorithm by passing the argument **-drizzle** which can take the additional options:
     **-pixfrac=** sets the pixel fraction (default = 1.0).
     The **-kernel=** argument sets the drizzle kernel and must be followed by one of **point**, **turbo**, **square**, **gaussian**, **lanczos2** or **lanczos3**. The default is **square**.
     The **-flat=** argument specifies a master flat to weight the drizzled input pixels (default is no flat).
-    
+
     Note: when using **-drizzle** on images taken with a color camera, the input images must not be debayered. In that case, star detection will always occur on the green pixels
-    
+
     Links: :ref:`setfindstar <setfindstar>`, :ref:`psf <psf>`, :ref:`seqapplyreg <seqapplyreg>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         base_name: str,
@@ -2502,33 +2537,35 @@ class register(BaseCommand):
 class requires(BaseCommand):
     """
     .. code-block:: text
-    
+
         requires min_version [obsolete_version]
-    
+
     Returns an error if the version of Siril is older than the minimum required version passed in the first argument. Optionally, takes a second argument for the Siril version at which the script is obsolete: returns an error if the version of Siril is **newer than or equal to** the one passed in the second argument.
-    
+
     Example: *requires 1.2.0 1.4.0* allows the script to run for all of the 1.2.x series and 1.3.x series, but will not run for any versions earlier than 1.2.0 or for version 1.4.0 or any later versions
     """
 
     def __init__(self, version: str, obsolete_version: t.Optional[str] = None):
         super().__init__()
         self.append(CommandArgument(version))
-        self.append(CommandOption("obsolete_version", obsolete_version))
+        if obsolete_version is not None:
+            self.append(CommandArgument(obsolete_version))
 
 
 class resample(BaseCommand):
     """
     .. code-block:: text
-    
+
         resample { factor | -width= | -height= | -maxdim= } [-interp=] [-noclamp]
-    
+
     Resamples the loaded image, either with a factor **factor** or for the target width or height provided by either of **-width=**, **-height=** or **-maxdim=**. This is generally used to resize images: a factor of 0.5 divides size by 2. The **-maxdim** argument can be used to resize the longest dimension of the image to a set size, which can be useful for optimizing images for certain websites, e.g. social media websites.
     In the graphical user interface, we can see that several interpolation algorithms are proposed.
-    
+
     The pixel interpolation method can be specified with the **-interp=** argument followed by one of the methods in the list **no**\ [ne], **ne**\ [arest], **cu**\ [bic], **la**\ [nczos4], **li**\ [near], **ar**\ [ea]}.
     Clamping of the bicubic and lanczos4 interpolation methods is the default, to avoid artefacts, but can be disabled with the **-noclamp** argument
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         factor: t.Optional[float] = None,
@@ -2554,13 +2591,14 @@ class resample(BaseCommand):
 class rgbcomp(BaseCommand):
     """
     .. code-block:: text
-    
+
         rgbcomp red green blue [-out=result_filename] [-nosum]
         rgbcomp -lum=image { rgb_image | red green blue } [-out=result_filename] [-nosum]
-    
+
     Creates an RGB composition using three independent images, or an LRGB composition using the optional luminance image and three monochrome images or a color image. Result image is called composed_rgb.fit or composed_lrgb.fit unless another name is provided in the optional argument. Another optional argument, **-nosum** tells Siril not to sum exposure times. This impacts FITS keywords such as LIVETIME and STACKCNT
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         luminance: t.Optional[str] = None,
@@ -2591,14 +2629,15 @@ class rgbcomp(BaseCommand):
 class rgradient(BaseCommand):
     """
     .. code-block:: text
-    
+
         rgradient xc yc dR dalpha
-    
+
     Creates two images, with a radial shift (**dR** in pixels) and a rotational shift (**dalpha** in degrees) with respect to the point (**xc**, **yc**).
-    
+
     Between these two images, the shifts have the same amplitude, but an opposite sign. The two images are then added to create the final image. This process is also called Larson Sekanina filter
     """
 
+    # TODO: Review python types
     def __init__(self, xc: int, yc: int, dR: int, dalpha: int):
         super().__init__()
         self.append(CommandArgument(xc))
@@ -2610,24 +2649,25 @@ class rgradient(BaseCommand):
 class rl(BaseCommand):
     """
     .. code-block:: text
-    
+
         rl [-loadpsf=] [-alpha=] [-iters=] [-stop=] [-gdstep=] [-tv] [-fh] [-mul]
-    
+
     Restores an image using the Richardson-Lucy method.
-    
+
     Optionally, a PSF may be loaded using the argument **-loadpsf=\ filename** (created with MAKEPSF).
-    
+
     The number of iterations is provide by **-iters** (the default is 10).
-    
+
     The type of regularization can be set with **-tv** for Total Variation, or **-fh** for the Frobenius norm of the Hessian matrix (the default is none) and **-alpha=** provides the regularization strength (lower value = more regularization, default = 3000).
-    
+
     By default the gradient descent method is used with a default step size of 0.0005, however the multiplicative method may be specified with **-mul**.
-    
+
     The stopping criterion may be activated by specifying a stopping limit with **-stop=**
-    
+
     Links: :ref:`psf <psf>`, :ref:`makepsf <makepsf>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         loadpsf: t.Optional[str] = None,
@@ -2653,15 +2693,16 @@ class rl(BaseCommand):
 class rmgreen(BaseCommand):
     """
     .. code-block:: text
-    
+
         rmgreen [-nopreserve] [type] [amount]
-    
+
     Applies a chromatic noise reduction filter. It removes green tint in the current image. This filter is based on PixInsight's SCNR and it is also the same filter used by HLVG plugin in Photoshop.
     Lightness is preserved by default but this can be disabled with the **-nopreserve** switch.
-    
+
     **Type** can take values 0 for average neutral, 1 for maximum neutral, 2 for maximum mask, 3 for additive mask, defaulting to 0. The last two can take an **amount** argument, a value between 0 and 1, defaulting to 1
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         nopreserve: bool = False,
@@ -2678,17 +2719,18 @@ class rmgreen(BaseCommand):
 class rotate(BaseCommand):
     """
     .. code-block:: text
-    
+
         rotate degree [-nocrop] [-interp=] [-noclamp]
-    
+
     Rotates the loaded image by an angle of **degree** value. The option **-nocrop** can be added to avoid cropping to the image size (black borders will be added).
-    
+
     Note: if a selection is active, i.e. by using a command \`boxselect\` before \`rotate\`, the resulting image will be a rotated crop. In this particular case, the option **-nocrop** will be ignored if passed.
-    
+
     The pixel interpolation method can be specified with the **-interp=** argument followed by one of the methods in the list **no**\ [ne], **ne**\ [arest], **cu**\ [bic], **la**\ [nczos4], **li**\ [near], **ar**\ [ea]}. If **none** is passed, the transformation is forced to shift and a pixel-wise shift is applied to each image without any interpolation.
     Clamping of the bicubic and lanczos4 interpolation methods is the default, to avoid artefacts, but can be disabled with the **-noclamp** argument
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         degree: int,
@@ -2706,11 +2748,11 @@ class rotate(BaseCommand):
 class rotatePi(BaseCommand):
     """
     .. code-block:: text
-    
+
         rotatePi
-    
+
     Rotates the loaded image of an angle of 180° around its center. This is equivalent to the command "ROTATE 180" or "ROTATE -180"
-    
+
     Links: :ref:`rotate <rotate>`
     """
 
@@ -2718,15 +2760,16 @@ class rotatePi(BaseCommand):
 class satu(BaseCommand):
     """
     .. code-block:: text
-    
+
         satu amount [background_factor [hue_range_index]]
-    
+
     Enhances the color saturation of the loaded image. Try iteratively to obtain best results.
     **amount** can be a positive number to increase color saturation, negative to decrease it, 0 would do nothing, 1 would increase it by 100%
     **background_factor** is a factor to (median + sigma) used to set a threshold for which only pixels above it would be modified. This allows background noise to not be color saturated, if chosen carefully. Defaults to 1. Setting 0 disables the threshold.
     **hue_range_index** can be [0, 6], meaning: 0 for pink to orange, 1 for orange to yellow, 2 for yellow to cyan, 3 for cyan, 4 for cyan to magenta, 5 for magenta to pink, 6 for all (default)
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         amount: float,
@@ -2743,11 +2786,11 @@ class satu(BaseCommand):
 class save(BaseCommand):
     """
     .. code-block:: text
-    
+
         save filename [-chksum]
-    
+
     Saves current image to **filename**.fit (or .fits, depending on your preferences, see SETEXT) in the current working directory. The image remains loaded. **filename** can contain a path as long as the directory already exists. The **-chksum** option stores checksum keywords (CHECKSUM and DATASUM) in the FITS header
-    
+
     Links: :ref:`setext <setext>`
     """
 
@@ -2756,12 +2799,13 @@ class save(BaseCommand):
         self.append(CommandArgument(filename))
         self.append(CommandFlag("chksum", chksum))
 
+
 class savebmp(BaseCommand):
     """
     .. code-block:: text
-    
+
         savebmp filename
-    
+
     Saves current image under the form of a bitmap file with 8-bit per channel: **filename**.bmp (BMP 24-bit)
     """
 
@@ -2769,14 +2813,15 @@ class savebmp(BaseCommand):
         super().__init__()
         self.append(CommandArgument(filename))
 
+
 class savejpg(BaseCommand):
     """
     .. code-block:: text
-    
+
         savejpg filename [quality]
-    
+
     Saves current image into a JPG file: **filename**.jpg.
-    
+
     The compression quality can be adjusted using the optional **quality** value, 100 being the best and default, while a lower value increases the compression ratio
     """
 
@@ -2789,15 +2834,18 @@ class savejpg(BaseCommand):
 class savejxl(BaseCommand):
     """
     .. code-block:: text
-    
+
         savejxl filename [-effort=] [-quality=] [-8bit]
-    
+
     Saves current image into a JPG XL file: **filename**.jxl.
-    
+
     All other arguments are optional. The quality setting expresses a maximum permissible distance between the original and the compressed image: the **-quality=** argument may be provided and must be specified as a floating point number between 0.0 and 10.0. A higher quality means better quality, but larger file size. Quality = 10.0 is mathematically lossless, quality = 9.0 is visually lossless and quality = 0 is visually poor but gives very small file sizes. The default value is 9.0; typical values range from 7.0 to 10.0. The compression effort can be adjusted using the optional **-effort=** value, 9 being the most effort but very slow, while a lower value increases the compression ratio. Values above 7 are not recommended as they can be very slow and produce little if any benefit to file size, in fact sometimes effort = 9 can produce larger files. If this argument is omitted the default value of 7 is used. An option **-8bit** may be provided to force output to be 8 bits per pixel
     """
 
-    def __init__(self, filename: str, effort: t.Optional[int] = None, quality: t.Optional[float] = None, bit_8: bool = False):
+    # TODO: Review python types
+    def __init__(
+        self, filename: str, effort: t.Optional[int] = None, quality: t.Optional[float] = None, bit_8: bool = False
+    ):
         super().__init__()
         self.append(CommandArgument(filename))
         self.append(CommandOptional(effort))
@@ -2808,9 +2856,9 @@ class savejxl(BaseCommand):
 class savepng(BaseCommand):
     """
     .. code-block:: text
-    
+
         savepng filename
-    
+
     Saves current image into a PNG file: **filename**.png, with 16 bits per channel if the loaded image is 16 or 32 bits, and 8 bits per channel if the loaded image is 8 bits
     """
 
@@ -2822,11 +2870,11 @@ class savepng(BaseCommand):
 class savepnm(BaseCommand):
     """
     .. code-block:: text
-    
+
         savepnm filename
-    
+
     Saves current image under the form of a NetPBM file format with 16-bit per channel.
-    
+
     The extension of the output will be **filename**.ppm for RGB image and **filename**.pgm for gray-level image
     """
 
@@ -2838,11 +2886,11 @@ class savepnm(BaseCommand):
 class savetif(BaseCommand):
     """
     .. code-block:: text
-    
+
         savetif filename [-astro] [-deflate]
-    
+
     Saves current image under the form of a uncompressed TIFF file with 16-bit per channel: **filename**.tif. The option **-astro** allows saving in Astro-TIFF format, while **-deflate** enables compression.
-    
+
     See also SAVETIF32 and SAVETIF8
     """
 
@@ -2853,15 +2901,14 @@ class savetif(BaseCommand):
         self.append(CommandFlag("deflate", deflate))
 
 
-
 class savetif32(BaseCommand):
     """
     .. code-block:: text
-    
+
         savetif32 filename [-astro] [-deflate]
-    
+
     Same command as SAVETIF but the output file is saved in 32-bit per channel: **filename**.tif. The option **-astro** allows saving in Astro-TIFF format, while **-deflate** enables compression
-    
+
     Links: :ref:`savetif <savetif>`
     """
 
@@ -2875,11 +2922,11 @@ class savetif32(BaseCommand):
 class savetif8(BaseCommand):
     """
     .. code-block:: text
-    
+
         savetif8 filename [-astro] [-deflate]
-    
+
     Same command as SAVETIF but the output file is saved in 8-bit per channel: **filename**.tif. The option **-astro** allows saving in Astro-TIFF format, while **-deflate** enables compression
-    
+
     Links: :ref:`savetif <savetif>`
     """
 
@@ -2889,23 +2936,25 @@ class savetif8(BaseCommand):
         self.append(CommandFlag("astro", astro))
         self.append(CommandFlag("deflate", deflate))
 
+
 class sb(BaseCommand):
     """
     .. code-block:: text
-    
+
         sb [-loadpsf=] [-alpha=] [-iters=]
-    
+
     Restores an image using the Split Bregman method.
-    
+
     Optionally, a PSF may be loaded using the argument **-loadpsf=\ filename**.
-    
+
     The number of iterations is provide by **-iters** (the default is 1).
-    
+
     The regularization factor **-alpha=** provides the regularization strength (lower value = more regularization, default = 3000)
-    
+
     Links: :ref:`psf <psf>`
     """
 
+    # TODO: Review python types
     def __init__(self, loadpsf: t.Optional[str] = None, alpha: t.Optional[float] = None, iters: t.Optional[int] = None):
         super().__init__()
         self.append(CommandOptional(loadpsf))
@@ -2916,25 +2965,26 @@ class sb(BaseCommand):
 class select(BaseCommand):
     """
     .. code-block:: text
-    
+
         select sequencename from to
-    
+
     This command allows easy mass selection of images in the sequence **sequencename** (from **from** to **to** included). This is a selection for later processing.
     See also UNSELECT
-    
+
     Links: :ref:`unselect <unselect>`
-    
+
     Examples:
-    
+
     `select . 0 0`
     selects the first of the currently loaded sequence
-    
+
     `select sequencename 1000 1200`
     selects 201 images starting from number 1000 in sequence named sequencename
-    
+
     The second number can be greater than the number of images to just go up to the end.
     """
 
+    # TODO: Review python types
     def __init__(self, sequencename: str, from_: int, to: int):
         super().__init__()
         self.append(CommandArgument(sequencename))
@@ -2945,46 +2995,46 @@ class select(BaseCommand):
 class seqapplyreg(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqapplyreg sequencename [-prefix=] [-scale=] [-layer=] [-framing=]
         seqapplyreg sequencename ... [-interp=] [-noclamp]
         seqapplyreg sequencename ... [-drizzle [-pixfrac=] [-kernel=] [-flat=]]
         seqapplyreg sequencename ... [-filter-fwhm=value[%|k]] [-filter-wfwhm=value[%|k]] [-filter-round=value[%|k]] [-filter-bkg=value[%|k]] [-filter-nbstars=value[%|k]] [-filter-quality=value[%|k]] [-filter-incl[uded]]
-    
+
     Applies geometric transforms on images of the sequence given in argument so that they may be superimposed on the reference image, using registration data previously computed (see REGISTER).
     The output sequence name starts with the prefix **"r\_"** unless otherwise specified with **-prefix=** option.
     The registration is done on the first layer for which data exists for RGB images unless specified by **-layer=** option (0, 1 or 2 for R, G and B respectively).
     The output images can be rescaled by passing a **-scale=** argument with a float value between 0.1 and 3.
-    
+
     Automatic framing of the output sequence can be specified using **-framing=** keyword followed by one of the methods in the list { current \| min \| max \| cog } :
     **-framing=max** (bounding box) will project each image and compute its shift wrt. reference image. The resulting sequence can then be stacked using option **-maximize** of STACK command which will create the full image encompassing all images of the sequence.
     **-framing=min** (common area) crops each image to the area it has in common with all images of the sequence.
     **-framing=cog** determines the best framing position as the center of gravity (cog) of all the images.
-    
+
     **Image interpolation options:**
     By default, transformations are applied to register the images by using interpolation.
     The pixel interpolation method can be specified with the **-interp=** argument followed by one of the methods in the list **no**\ [ne], **ne**\ [arest], **cu**\ [bic], **la**\ [nczos4], **li**\ [near], **ar**\ [ea]}. If **none** is passed, the transformation is forced to shift and a pixel-wise shift is applied to each image without any interpolation.
     Clamping of the bicubic and lanczos4 interpolation methods is the default, to avoid artefacts, but can be disabled with the **-noclamp** argument.
-    
+
     **Image drizzle options:**
     Otherwise, the images can be exported using HST drizzle algorithm by passing the argument **-drizzle** which can take the additional options:
     **-pixfrac=** sets the pixel fraction (default = 1.0).
     The **-kernel=** argument sets the drizzle kernel and must be followed by one of **point**, **turbo**, **square**, **gaussian**, **lanczos2** or **lanczos3**. The default is **square**.
     The **-flat=** argument specifies a master flat to weight the drizzled input pixels (default is no flat).
-    
+
     **Filtering out images:**
     Images to be registered can be selected based on some filters, like those selected or with best FWHM, with some of the **-filter-\*** options.
-    
-    
+
+
     Links: :ref:`register <register>`, :ref:`stack <stack>`
-    
+
     With filtering being some of these in no particular order or number:
-    
+
     .. code-block:: text
-    
+
         [-filter-fwhm=value[%|k]] [-filter-wfwhm=value[%|k]] [-filter-round=value[%|k]] [-filter-bkg=value[%|k]]
         [-filter-nbstars=value[%|k]] [-filter-quality=value[%|k]] [-filter-incl[uded]]
-    
+
     Best images from the sequence can be stacked by using the filtering arguments. Each of these arguments can remove bad images based on a property their name contains, taken from the registration data, with either of the three types of argument values:
     - a numeric value for the worse image to keep depending on the type of data used (between 0 and 1 for roundness and quality, absolute values otherwise),
     - a percentage of best images to keep if the number is followed by a % sign,
@@ -2992,6 +3042,7 @@ class seqapplyreg(BaseCommand):
     It is also possible to use manually selected images, either previously from the GUI or with the select or unselect commands, using the **-filter-included** argument.
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         base_name: str,
@@ -3019,16 +3070,17 @@ class seqapplyreg(BaseCommand):
 class seqccm(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqccm sequencename [-prefix=]
-    
+
     Same command as CCM but for the the sequence **sequencename**. Only selected images in the sequence are processed.
-    
+
     The output sequence name starts with the prefix "ccm" unless otherwise specified with option **-prefix=**
-    
+
     Links: :ref:`ccm <ccm>`
     """
 
+    # TODO: Review python types
     def __init__(self, sequencename: str, prefix: t.Optional[str] = None):
         super().__init__()
         self.append(CommandArgument(sequencename))
@@ -3038,14 +3090,15 @@ class seqccm(BaseCommand):
 class seqclean(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqclean sequencename [-reg] [-stat] [-sel]
-    
+
     This command clears selection, registration and/or statistics data stored for the sequence **sequencename**.
-    
+
     You can specify to clear only registration, statistics and/or selection with **-reg**, **-stat** and **-sel** options respectively. All are cleared if no option is passed
     """
 
+    # TODO: Review python types
     def __init__(self, sequencename: str, reg: bool = False, stat: bool = False, sel: bool = False):
         super().__init__()
         self.append(CommandArgument(sequencename))
@@ -3053,19 +3106,21 @@ class seqclean(BaseCommand):
         self.append(CommandFlag("stat", stat))
         self.append(CommandFlag("sel", sel))
 
+
 class seqcosme(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqcosme sequencename [filename].lst [-prefix=]
-    
+
     Same command as COSME but for the the sequence **sequencename**. Only selected images in the sequence are processed.
-    
+
     The output sequence name starts with the prefix "cosme\_" unless otherwise specified with option **-prefix=**
-    
+
     Links: :ref:`cosme <cosme>`
     """
 
+    # TODO: Review python types
     def __init__(self, sequencename: str, filename: t.Optional[str] = None, prefix: t.Optional[str] = None):
         super().__init__()
         self.append(CommandArgument(sequencename))
@@ -3076,36 +3131,39 @@ class seqcosme(BaseCommand):
 class seqcosme_cfa(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqcosme_cfa sequencename [filename].lst [-prefix=]
-    
+
     Same command as COSME_CFA but for the the sequence **sequencename**. Only selected images in the sequence are processed.
-    
+
     The output sequence name starts with the prefix "cosme\_" unless otherwise specified with option **-prefix=**
-    
+
     Links: :ref:`cosme_cfa <cosme_cfa>`
     """
 
+    # TODO: Review python types
     def __init__(self, sequencename: str, filename: t.Optional[str] = None, prefix: t.Optional[str] = None):
         super().__init__()
         self.append(CommandArgument(sequencename))
         self.append(CommandOptional(filename))
         self.append(CommandOptional(prefix))
 
+
 class seqcrop(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqcrop sequencename x y width height [-prefix=]
-    
+
     Crops the sequence given in argument **sequencename**. Only selected images in the sequence are processed.
-    
+
     The crop selection is specified by the upper left corner position **x** and **y** and the selection **width** and **height**, like for CROP.
     The output sequence name starts with the prefix "cropped\_" unless otherwise specified with **-prefix=** option
-    
+
     Links: :ref:`crop <crop>`
     """
 
+    # TODO: Review python types
     def __init__(self, seq: str, x, y, width, height, prefix: t.Optional[str] = None):
         super().__init__()
         self.append(CommandArgument(seq))
@@ -3113,18 +3171,18 @@ class seqcrop(BaseCommand):
         self.append(CommandOption("prefix", prefix))
 
 
-
 class seqextract_Green(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqextract_Green sequencename [-prefix=]
-    
+
     Same command as EXTRACT_GREEN but for the sequence **sequencename**.
-    
+
     The output sequence name starts with the prefix "Green\_" unless otherwise specified with option **-prefix=**
     """
 
+    # TODO: Review python types
     def __init__(self, sequencename: str, prefix: t.Optional[str] = None):
         super().__init__()
         self.append(CommandArgument(sequencename))
@@ -3134,51 +3192,54 @@ class seqextract_Green(BaseCommand):
 class seqextract_Ha(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqextract_Ha sequencename [-prefix=] [-upscale]
-    
+
     Same command as EXTRACT_HA but for the sequence **sequencename**.
-    
+
     The output sequence name starts with the prefix "Ha\_" unless otherwise specified with option **-prefix=**
     """
 
+    # TODO: Review python types
     def __init__(self, sequencename: str, prefix: t.Optional[str] = None, upscale: t.Optional[bool] = None):
         super().__init__()
         self.append(CommandArgument(sequencename))
         self.append(CommandOptional(prefix))
         self.append(CommandOptional(upscale))
 
+
 class seqextract_HaOIII(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqextract_HaOIII sequencename [-resample=]
-    
+
     Same command as EXTRACT_HAOIII but for the sequence **sequencename**.
-    
+
     The output sequences names start with the prefixes "Ha\_" and "OIII\_"
     """
 
+    # TODO: Review python types
     def __init__(self, sequencename: str, resample: t.Optional[str] = None):
         super().__init__()
         self.append(CommandArgument(sequencename))
         self.append(CommandOptional(resample))
 
 
-
 class seqfind_cosme(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqfind_cosme sequencename cold_sigma hot_sigma [-prefix=]
-    
+
     Same command as FIND_COSME but for the sequence **sequencename**.
-    
+
     The output sequence name starts with the prefix "cc\_" unless otherwise specified with **-prefix=** option
-    
+
     Links: :ref:`find_cosme <find_cosme>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
@@ -3196,16 +3257,17 @@ class seqfind_cosme(BaseCommand):
 class seqfind_cosme_cfa(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqfind_cosme_cfa sequencename cold_sigma hot_sigma [-prefix=]
-    
+
     Same command as FIND_COSME_CFA but for the sequence **sequencename**.
-    
+
     The output sequence name starts with the prefix "cc\_" unless otherwise specified with **-prefix=** option
-    
+
     Links: :ref:`find_cosme_cfa <find_cosme_cfa>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
@@ -3223,16 +3285,17 @@ class seqfind_cosme_cfa(BaseCommand):
 class seqfindstar(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqfindstar sequencename [-layer=] [-maxstars=]
-    
+
     Same command as FINDSTAR but for the sequence **sequencename**.
-    
+
     The option **-out=** is not available for this process as all the star list files are saved with the default name *seqname_seqnb.lst*
-    
+
     Links: :ref:`findstar <findstar>`
     """
 
+    # TODO: Review python types
     def __init__(self, sequence: str, layer: t.Optional[int] = None, max_stars: t.Optional[int] = None):
         super().__init__()
         self.append(CommandArgument(sequence))
@@ -3243,17 +3306,24 @@ class seqfindstar(BaseCommand):
 class seqfixbanding(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqfixbanding sequencename amount sigma [-prefix=] [-vertical]
-    
+
     Same command as FIXBANDING but for the sequence **sequencename**.
-    
+
     The output sequence name starts with the prefix "unband\_" unless otherwise specified with **-prefix=** option
-    
+
     Links: :ref:`fixbanding <fixbanding>`
     """
 
-    def __init__(self, sequence: str, amount: float, sigma: float, prefix: t.Optional[str] = None, vertical: t.Optional[bool] = None):
+    def __init__(
+        self,
+        sequence: str,
+        amount: float,
+        sigma: float,
+        prefix: t.Optional[str] = None,
+        vertical: t.Optional[bool] = None,
+    ):
         super().__init__()
         self.append(CommandArgument(sequence))
         self.append(CommandArgument(amount))
@@ -3265,29 +3335,30 @@ class seqfixbanding(BaseCommand):
 class seqght(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqght sequence -D= [-B=] [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels] [-prefix=]
-    
+
     Same command as GHT but the sequence must be specified as the first argument. In addition, the optional argument **-prefix=** can be used to set a custom prefix
-    
+
     Links: :ref:`ght <ght>`
     """
 
+    # TODO: Review python types
     def __init__(
-        self, 
-        sequence: str, 
-        D: float, 
-        B: float, 
-        LP: float, 
-        SP: float, 
-        HP: float, 
-        clipmode: t.Optional[str] = None, 
-        human: t.Optional[bool] = None, 
-        even: t.Optional[bool] = None, 
-        independent: t.Optional[bool] = None, 
-        sat: t.Optional[bool] = None, 
-        channels: t.Optional[str] = None, 
-        prefix: t.Optional[str] = None
+        self,
+        sequence: str,
+        D: float,
+        B: float,
+        LP: float,
+        SP: float,
+        HP: float,
+        clipmode: t.Optional[str] = None,
+        human: t.Optional[bool] = None,
+        even: t.Optional[bool] = None,
+        independent: t.Optional[bool] = None,
+        sat: t.Optional[bool] = None,
+        channels: t.Optional[str] = None,
+        prefix: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
@@ -3309,29 +3380,30 @@ class seqght(BaseCommand):
 class seqgraxpert_bg(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqgraxpert_bg sequencename [-algo=] [-mode=] [-kernel=] [-ai_batch_size=] [-pts_per_row=] [-splineorder=] [-samplesize=] [-smoothing=] [-bgtol=] [ { -gpu | -cpu } ] [-keep_bg]
-    
+
     Applies the external GraXpert program to a sequence, in background extraction mode. The first argument must be the sequence name; the remaining arguments are the same as for the GRAXPERT_BG command
-    
+
     Links: :ref:`graxpert_bg <graxpert_bg>`
     """
 
+    # TODO: Review python types
     def __init__(
-        self, 
-        sequence: str, 
-        algo: t.Optional[str] = None, 
-        mode: t.Optional[str] = None, 
-        kernel: t.Optional[str] = None, 
-        ai_batch_size: t.Optional[str] = None, 
-        pts_per_row: t.Optional[str] = None, 
-        splineorder: t.Optional[str] = None, 
-        samplesize: t.Optional[str] = None, 
-        smoothing: t.Optional[str] = None, 
-        bgtol: t.Optional[str] = None, 
-        gpu: t.Optional[bool] = None, 
-        cpu: t.Optional[bool] = None, 
-        keep_bg: t.Optional[bool] = None
+        self,
+        sequence: str,
+        algo: t.Optional[str] = None,
+        mode: t.Optional[str] = None,
+        kernel: t.Optional[str] = None,
+        ai_batch_size: t.Optional[str] = None,
+        pts_per_row: t.Optional[str] = None,
+        splineorder: t.Optional[str] = None,
+        samplesize: t.Optional[str] = None,
+        smoothing: t.Optional[str] = None,
+        bgtol: t.Optional[str] = None,
+        gpu: t.Optional[bool] = None,
+        cpu: t.Optional[bool] = None,
+        keep_bg: t.Optional[bool] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
@@ -3352,20 +3424,21 @@ class seqgraxpert_bg(BaseCommand):
 class seqgraxpert_denoise(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqgraxpert_denoise sequencename [-strength=] [ { -gpu | -cpu } ]
-    
+
     Applies the external GraXpert program to a sequence, in denoising mode. The first argument must be the sequence name; the remaining arguments are the same as for the GRAXPERT_DENOISE command
-    
+
     Links: :ref:`graxpert_denoise <graxpert_denoise>`
     """
 
+    # TODO: Review python types
     def __init__(
-        self, 
-        sequence: str, 
-        strength: t.Optional[str] = None, 
-        gpu: t.Optional[bool] = None, 
-        cpu: t.Optional[bool] = None
+        self,
+        sequence: str,
+        strength: t.Optional[str] = None,
+        gpu: t.Optional[bool] = None,
+        cpu: t.Optional[bool] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
@@ -3374,22 +3447,18 @@ class seqgraxpert_denoise(BaseCommand):
         self.append(CommandOption("gpu", gpu))
         self.append(CommandOption("cpu", cpu))
 
+
 class seqheader(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqheader sequencename keyword [keyword2 ...] [-sel] [-out=file.csv]
-    
+
     Prints the FITS header value corresponding to the given keys for all images in the sequence. You can write several keys in a row, separated by a space. The **-out=** option, followed by a file name, allows you to print the output in a csv file. The **-sel** option limits the output to the images selected in the sequence
     """
 
-    def __init__(
-        self, 
-        sequence: str, 
-        keywords: t.List[str], 
-        sel: t.Optional[bool] = None, 
-        out: t.Optional[str] = None
-    ):
+    # TODO: Review python types
+    def __init__(self, sequence: str, keywords: t.List[str], sel: t.Optional[bool] = None, out: t.Optional[str] = None):
         super().__init__()
         self.append(CommandArgument(sequence))
         self.append(CommandArgument(keywords))
@@ -3400,29 +3469,30 @@ class seqheader(BaseCommand):
 class seqinvght(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqinvght sequence -D= [-B=] [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels] [-prefix=]
-    
+
     Same command as INVGHT but the sequence must be specified as the first argument. In addition, the optional argument **-prefix=** can be used to set a custom prefix
-    
+
     Links: :ref:`invght <invght>`
     """
 
+    # TODO: Review python types
     def __init__(
-        self, 
-        sequence: str, 
-        D: float, 
-        B: float, 
-        LP: float, 
-        SP: float, 
-        HP: float, 
-        clipmode: t.Optional[str] = None, 
-        human: t.Optional[bool] = None, 
-        even: t.Optional[bool] = None, 
-        independent: t.Optional[bool] = None, 
-        sat: t.Optional[bool] = None, 
-        channels: t.Optional[str] = None, 
-        prefix: t.Optional[str] = None
+        self,
+        sequence: str,
+        D: float,
+        B: float,
+        LP: float,
+        SP: float,
+        HP: float,
+        clipmode: t.Optional[str] = None,
+        human: t.Optional[bool] = None,
+        even: t.Optional[bool] = None,
+        independent: t.Optional[bool] = None,
+        sat: t.Optional[bool] = None,
+        channels: t.Optional[str] = None,
+        prefix: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
@@ -3444,28 +3514,29 @@ class seqinvght(BaseCommand):
 class seqinvmodasinh(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqinvmodasinh sequence -D= [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels] [-prefix=]
-    
+
     Same command as INVMODASINH but the sequence must be specified as the first argument. In addition, the optional argument **-prefix=** can be used to set a custom prefix
-    
+
     Links: :ref:`invmodasinh <invmodasinh>`
     """
 
+    # TODO: Review python types
     def __init__(
-        self, 
-        sequence: str, 
-        D: float, 
-        LP: float, 
-        SP: float, 
-        HP: float, 
-        clipmode: t.Optional[str] = None, 
-        human: t.Optional[bool] = None, 
-        even: t.Optional[bool] = None, 
-        independent: t.Optional[bool] = None, 
-        sat: t.Optional[bool] = None, 
-        channels: t.Optional[str] = None, 
-        prefix: t.Optional[str] = None
+        self,
+        sequence: str,
+        D: float,
+        LP: float,
+        SP: float,
+        HP: float,
+        clipmode: t.Optional[str] = None,
+        human: t.Optional[bool] = None,
+        even: t.Optional[bool] = None,
+        independent: t.Optional[bool] = None,
+        sat: t.Optional[bool] = None,
+        channels: t.Optional[str] = None,
+        prefix: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
@@ -3486,21 +3557,22 @@ class seqinvmodasinh(BaseCommand):
 class seqlinstretch(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqlinstretch sequence -BP= [channels] [-sat] [-prefix=]
-    
+
     Same command as LINSTRETCH but the sequence must be specified as the first argument. In addition, the optional argument **-prefix=** can be used to set a custom prefix
-    
+
     Links: :ref:`linstretch <linstretch>`
     """
 
+    # TODO: Review python types
     def __init__(
-        self, 
-        sequence: str, 
-        BP: float, 
-        channels: t.Optional[str] = None, 
-        sat: t.Optional[bool] = None, 
-        prefix: t.Optional[str] = None
+        self,
+        sequence: str,
+        BP: float,
+        channels: t.Optional[str] = None,
+        sat: t.Optional[bool] = None,
+        prefix: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
@@ -3514,26 +3586,27 @@ class seqlinstretch(BaseCommand):
 class seqmerge_cfa(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqmerge_cfa sequencename0 sequencename1 sequencename2 sequencename3 bayerpattern [-prefixout=]
-    
+
     Merges 4 sequences of images to recombine the Bayer pattern. The sequences are specified in the arguments **sequencename0**, **sequencename1**, **sequencename2** and **sequencename3**.
-    
+
     The Bayer pattern to be reconstructed must be provided as the second argment as one of RGGB, BGGR, GBRG or GRBG (the order of the Bayer channels must match the order of the specified sequences).
-    
+
     Note: all 4 input sequences **must** be present and have the same dimensions, bit depth and number of images.
-    
+
     The output sequence name starts with the prefix "mCFA\_" and a number unless otherwise specified with **-prefixout=** option
     """
 
+    # TODO: Review python types
     def __init__(
-        self, 
-        sequencename0: str, 
-        sequencename1: str, 
-        sequencename2: str, 
-        sequencename3: str, 
-        bayerpattern: str, 
-        prefixout: t.Optional[str] = None
+        self,
+        sequencename0: str,
+        sequencename1: str,
+        sequencename2: str,
+        sequencename3: str,
+        bayerpattern: str,
+        prefixout: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequencename0))
@@ -3547,28 +3620,29 @@ class seqmerge_cfa(BaseCommand):
 class seqmodasinh(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqmodasinh sequence -D= [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels] [-prefix=]
-    
+
     Same command as MODASINH but the sequence must be specified as the first argument. In addition, the optional argument **-prefix=** can be used to set a custom prefix
-    
+
     Links: :ref:`modasinh <modasinh>`
     """
 
+    # TODO: Review python types
     def __init__(
-        self, 
-        sequence: str, 
-        D: float, 
-        LP: float, 
-        SP: float, 
-        HP: float, 
-        clipmode: t.Optional[str] = None, 
-        human: t.Optional[bool] = None, 
-        even: t.Optional[bool] = None, 
-        independent: t.Optional[bool] = None, 
-        sat: t.Optional[bool] = None, 
-        channels: t.Optional[str] = None, 
-        prefix: t.Optional[str] = None
+        self,
+        sequence: str,
+        D: float,
+        LP: float,
+        SP: float,
+        HP: float,
+        clipmode: t.Optional[str] = None,
+        human: t.Optional[bool] = None,
+        even: t.Optional[bool] = None,
+        independent: t.Optional[bool] = None,
+        sat: t.Optional[bool] = None,
+        channels: t.Optional[str] = None,
+        prefix: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
@@ -3589,24 +3663,25 @@ class seqmodasinh(BaseCommand):
 class seqmtf(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqmtf sequencename low mid high [channels] [-prefix=]
-    
+
     Same command as MTF but for the sequence **sequencename**.
-    
+
     The output sequence name starts with the prefix "mtf\_" unless otherwise specified with **-prefix=** option
-    
+
     Links: :ref:`mtf <mtf>`
     """
 
+    # TODO: Review python types
     def __init__(
-        self, 
-        sequencename: str, 
-        low: float, 
-        mid: float, 
-        high: float, 
-        channels: t.Optional[str] = None, 
-        prefix: t.Optional[str] = None
+        self,
+        sequencename: str,
+        low: float,
+        mid: float,
+        high: float,
+        channels: t.Optional[str] = None,
+        prefix: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequencename))
@@ -3620,30 +3695,31 @@ class seqmtf(BaseCommand):
 class seqprofile(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqprofile sequence -from=x,y -to=x,y [-tri] [-cfa] [-arcsec] [-savedat] [-layer=] [-width=] [-spacing=] [ {-xaxis=wavelength | -xaxis=wavenumber } ] [{-wavenumber1= | -wavelength1=} -wn1at=x,y {-wavenumber2= | -wavelength2=} -wn2at=x,y] ["-title=My Plot"]
-    
+
     Generates an intensity profile plot between 2 points in each image in the sequence. After the mandatory first argument stating the sequence to process, the other arguments are the same as for the **profile** command. If processing a sequence and it is desired to have the current image number and total number of images displayed in the format "My Sequence (1 / 5)", the given title should end with () (e.g. "My Sequence ()" and the numbers will be populated automatically)
     """
 
+    # TODO: Review python types
     def __init__(
-        self, 
-        sequence: str, 
-        from_: t.Tuple[int, int], 
-        to: t.Tuple[int, int], 
-        tri: t.Optional[bool] = None, 
-        cfa: t.Optional[bool] = None, 
-        arcsec: t.Optional[bool] = None, 
-        savedat: t.Optional[bool] = None, 
-        layer: t.Optional[str] = None, 
-        width: t.Optional[int] = None, 
-        spacing: t.Optional[int] = None, 
-        xaxis: t.Optional[str] = None, 
-        wavenumber1: t.Optional[int] = None, 
-        wn1at: t.Optional[t.Tuple[int, int]] = None, 
-        wavenumber2: t.Optional[int] = None, 
-        wn2at: t.Optional[t.Tuple[int, int]] = None, 
-        title: t.Optional[str] = None
+        self,
+        sequence: str,
+        from_: t.Tuple[int, int],
+        to: t.Tuple[int, int],
+        tri: t.Optional[bool] = None,
+        cfa: t.Optional[bool] = None,
+        arcsec: t.Optional[bool] = None,
+        savedat: t.Optional[bool] = None,
+        layer: t.Optional[str] = None,
+        width: t.Optional[int] = None,
+        spacing: t.Optional[int] = None,
+        xaxis: t.Optional[str] = None,
+        wavenumber1: t.Optional[int] = None,
+        wn1at: t.Optional[t.Tuple[int, int]] = None,
+        wavenumber2: t.Optional[int] = None,
+        wn2at: t.Optional[t.Tuple[int, int]] = None,
+        title: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
@@ -3676,25 +3752,27 @@ class seqprofile(BaseCommand):
         if title is not None:
             self.append(CommandOption("title", title))
 
+
 class seqpsf(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqpsf [sequencename channel { -at=x,y | -wcs=ra,dec }]
-    
+
     Same command as PSF but runs on sequences. This is similar to the one-star registration, except results can be used for photometry analysis rather than aligning images and the coordinates of the star can be provided by options.
     This command is what is called internally by the menu that appears on right click in the image, with the PSF for the sequence entry. By default, it will run with parallelisation activated; if registration data already exists for the sequence, they will be used to shift the search window in each image. If there is no registration data and if there is significant shift between images in the sequence, the default settings will fail to find stars in the initial position of the search area.
     The follow star option can then be activated by going in the registration tab, selecting the one-star registration and checking the follow star movement box (default in headless if no registration data is available).
-    
+
     Results will be displayed in the Plot tab, from which they can also be exported to a comma-separated values (CSV) file for external analysis.
-    
+
     When creating a light curve, the first star for which seqpsf has been run, marked 'V' in the display, will be considered as the variable star. All others are averaged to create a reference light curve subtracted to the light curve of the variable star.
-    
+
     Currently, in headless operation, the command prints some analysed data in the console, another command allows several stars to be analysed and plotted as a light curve: LIGHT_CURVE. Arguments are mandatory in headless, with -at= allowing coordinates in pixels to be provided for the target star and -wcs= allowing J2000 equatorial coordinates to be provided
-    
+
     Links: :ref:`psf <psf>`, :ref:`light_curve <light_curve>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
@@ -3714,36 +3792,37 @@ class seqpsf(BaseCommand):
 class seqplatesolve(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqplatesolve sequencename [image_center_coords] [-focal=] [-pixelsize=]
         seqplatesolve sequencename ... [-downscale] [-order=] [-radius=] [-force] [-noreg] [-disto=]
         seqplatesolve sequencename ... [-limitmag=[+-]] [-catalog=] [-nocrop] [-nocache]
         seqplatesolve sequencename ... [-localasnet [-blindpos] [-blindres]]
-    
+
     Plate solve a sequence. A new sequence will be created with the prefix "ps\_" if the input sequence is SER, otherwise, the images headers will be updated. In case of SER, providing the metadata is mandatory and the output sequence will be in the FITS cube format, as SER cannot store WCS data.
     If WCS or other image metadata are erroneous or missing, arguments must be passed:
     the approximate image center coordinates can be provided in decimal degrees or degree/hour minute second values (J2000 with colon separators), with right ascension and declination values separated by a comma or a space (not mandatory for astrometry.net).
     focal length and pixel size can be passed with **-focal=** (in mm) and **-pixelsize=** (in microns), overriding values from images and settings. See also options to solve blindly with local Astrometry.net
-    
+
     For faster star detection in big images, downsampling the image is possible with **-downscale**.
     The solve can account for distortions using SIP convention with polynomials up to order 5. Default value is taken form the astrometry preferences. This can be changed with the option **-order=** giving a value between 1 and 5.
     When using Siril solver local catalogues or with local Astrometry.net, if the initial solve is not successful, the solver will search for a solution within a cone of radius specified with **-radius=** option. If no value is passed, the search radius is taken from the astrometry preferences. Siril near search can be disabled by passing a value of 0. (cannot be disabled for Astrometry.net).
     Images already solved will be skipped by default. This can be disabled by passing the option **-force**.
     Using this command will update registration data unless the option **-noreg** is passed.
     You can save the current solution as a distortion file with the option **-disto=**.
-    
+
     Images can be either plate solved by Siril using a star catalogue and the global registration algorithm or by astrometry.net's local solve-field command (enabled with **-localasnet**).
-    
+
     **Siril platesolver options:**
     The limit magnitude of stars used for plate solving is automatically computed from the size of the field of view, but can be altered by passing a +offset or -offset value to **-limitmag=**, or simply an absolute positive value for the limit magnitude.
     The choice of the star catalog is automatic unless the **-catalog=** option is passed: if local catalogs are installed, they are used, otherwise the choice is based on the field of view and limit magnitude. If the option is passed, it forces the use of the remote catalog given in argument, with possible values: tycho2, nomad, gaia, ppmxl, brightstars, apass.
     If the computed field of view is larger than 5 degrees, star detection will be bounded to a cropped area around the center of the image unless **-nocrop** option is passed.
     When using online catalogues, a single catalogue extraction will be done for the entire sequence. If there is a lot of drift or different sampling, that may not succeed for all images. This can be disabled by passing the argument **-nocache**, in which case metadata from each image will be used (except for the forced values like center coordinates, pixel size and/or focal length).
-    
+
     **Astrometry.net solver options:**
     Passing options **-blindpos** and/or **-blindres** enables to solve blindly for position and for resolution respectively. You can use these when solving an image with a completely unknown location and sampling
     """
 
+    # TODO: Review python types
     # TODO: implement all options
     def __init__(
         self,
@@ -3783,18 +3862,19 @@ class seqplatesolve(BaseCommand):
 class seqresample(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqresample sequencename { -scale= | -width= | -height= } [-interp=] [-prefix=]
-    
+
     Scales the sequence given in argument **sequencename**. Only selected images in the sequence are processed.
-    
+
     The scale factor is specified either by the **-scale=** argument or by setting the output width, height or maximum dimension using the **-width=**, **-height=** or **-maxdim=** options.
-    
+
     An interpolation method may be specified using the **-interp=** argument followed by one of the methods in the list **ne**\ [arest], **cu**\ [bic], **la**\ [nczos4], **li**\ [near], **ar**\ [ea]}.. Clamping is applied for cubic and lanczos interpolation.
-    
+
     The output sequence name starts with the prefix "scaled\_" unless otherwise specified with **-prefix=** option
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
@@ -3816,14 +3896,15 @@ class seqresample(BaseCommand):
 class seqrl(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqrl sequencename [-loadpsf=] [-alpha=] [-iters=] [-stop=] [-gdstep=] [-tv] [-fh] [-mul]
-    
+
     The same as the RL command, but applies to a sequence which must be specified as the first argument
-    
+
     Links: :ref:`rl <rl>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
@@ -3851,14 +3932,15 @@ class seqrl(BaseCommand):
 class seqsb(BaseCommand):
     """
     .. code-block:: text
-    
+
         sb sequencename [-loadpsf=] [-alpha=] [-iters=]
-    
+
     The same as the SB command, but applies to a sequence which must be specified as the first argument
-    
+
     Links: :ref:`sb <sb>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
@@ -3876,17 +3958,18 @@ class seqsb(BaseCommand):
 class seqsplit_cfa(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqsplit_cfa sequencename [-prefix=]
-    
+
     Same command as SPLIT_CFA but for the sequence **sequencename**.
-    
+
     The output sequences names start with the prefix "CFA\_" and a number unless otherwise specified with **-prefix=** option.
     *Limitation:* the sequence always outputs a sequence of FITS files, no matter the type of input sequence
-    
+
     Links: :ref:`split_cfa <split_cfa>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
@@ -3900,21 +3983,22 @@ class seqsplit_cfa(BaseCommand):
 class seqstarnet(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqstarnet sequencename [-stretch] [-upscale] [-stride=value] [-nostarmask]
-    
+
     This command calls `Starnet++ <https://www.starnetastro.com/>`__ to remove stars from the sequence **sequencename**. See STARNET
-    
+
     Links: :ref:`starnet <starnet>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
         stretch: bool = False,
         upscale: bool = False,
         stride: t.Optional[int] = None,
-       nostarmask: bool = False,
+        nostarmask: bool = False,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
@@ -3923,25 +4007,27 @@ class seqstarnet(BaseCommand):
         self.append(CommandOption("stride", stride))
         self.append(CommandFlag("nostarmask", nostarmask))
 
+
 class seqstat(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqstat sequencename output_file [option] [-cfa]
-    
+
     Same command as STAT for sequence **sequencename**.
-    
+
     Data is saved as a csv file **output_file**.
     The optional parameter defines the number of statistical values computed: **basic**, **main** (default) or **full** (more detailed but longer to compute).
     \\t\ **basic** includes mean, median, sigma, bgnoise, min and max
     \\t\ **main** includes basic with the addition of avgDev, MAD and the square root of BWMV
     \\t\ **full** includes main with the addition of location and scale.
-    
+
     If **-cfa** is passed and the images are CFA, statistics are made on per-filter extractions
-    
+
     Links: :ref:`stat <stat>`
     """
-    
+
+    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
@@ -3959,17 +4045,18 @@ class seqstat(BaseCommand):
 class seqsubsky(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqsubsky sequencename { -rbf | degree } [-nodither] [-samples=20] [-tolerance=1.0] [-smooth=0.5] [-prefix=]
-    
+
     Same command as SUBSKY but for the sequence **sequencename**.
     Dithering, required for low dynamic gradients, can be disabled with **-nodither**. Note that the **-existing** option is not available for sequence background removal, as the frames of a sequence are not necessarily always aligned.
-    
+
     The output sequence name starts with the prefix "bkg\_" unless otherwise specified with **-prefix=** option. Only selected images in the sequence are processed
-    
+
     Links: :ref:`subsky <subsky>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         base_name: str,
@@ -3990,11 +4077,11 @@ class seqsubsky(BaseCommand):
 class seqtilt(BaseCommand):
     """
     .. code-block:: text
-    
+
         seqtilt sequencename
-    
+
     Same command as TILT but for the sequence **sequencename**. It generally gives better results
-    
+
     Links: :ref:`tilt <tilt>`
     """
 
@@ -4009,17 +4096,18 @@ class seqtilt(BaseCommand):
 class sequpdate_key(BaseCommand):
     """
     .. code-block:: text
-    
+
         sequpdate_key sequencename key value [keycomment]
         sequpdate_key sequencename -delete key
         sequpdate_key sequencename -modify key newkey
         sequpdate_key sequencename -comment comment
-    
+
     Same command as UPDATE_KEY but for the sequence **sequencename**. However, this command won't work on SER sequence
-    
+
     Links: :ref:`update_key <update_key>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
@@ -4033,14 +4121,15 @@ class sequpdate_key(BaseCommand):
         self.append(CommandArgument(value))
         self.append(CommandOption("keycomment", keycomment))
 
+
 class seqwiener(BaseCommand):
     """
     .. code-block:: text
-    
+
         wiener sequencename [-loadpsf=] [-alpha=]
-    
+
     The same as the **WIENER** command, but applies to a sequence which must be specified as the first argument
-    
+
     Links: :ref:`wiener <wiener>`
     """
 
@@ -4059,15 +4148,16 @@ class seqwiener(BaseCommand):
 class set(BaseCommand):
     """
     .. code-block:: text
-    
+
         set { -import=inifilepath | variable=value }
-    
+
     Updates a setting value, using its variable name, with the given value, or a set of values using an existing ini file with **-import=** option.
     See GET to get values or the list of variables
-    
+
     Links: :ref:`get <get>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         import_file: t.Optional[str] = None,
@@ -4083,9 +4173,9 @@ class set(BaseCommand):
 class set16bits(BaseCommand):
     """
     .. code-block:: text
-    
+
         set16bits
-    
+
     Forbids images to be saved with 32 bits per channel on processing, use 16 bits instead
     """
 
@@ -4093,9 +4183,9 @@ class set16bits(BaseCommand):
 class set32bits(BaseCommand):
     """
     .. code-block:: text
-    
+
         set32bits
-    
+
     Allows images to be saved with 32 bits per channel on processing
     """
 
@@ -4103,18 +4193,19 @@ class set32bits(BaseCommand):
 class setcompress(BaseCommand):
     """
     .. code-block:: text
-    
+
         setcompress 0/1 [-type=] [q]
-    
+
     Defines if images are compressed or not.
-    
+
     **0** means no compression while **1** enables compression.
     If compression is enabled, the type must be explicitly written in the option **-type=** ("rice", "gzip1", "gzip2").
     Associated to the compression, the quantization value must be within [0, 256] range.
-    
+
     For example, "setcompress 1 -type=rice 16" sets the rice compression with a quantization of 16
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         enable: bool,
@@ -4133,13 +4224,13 @@ class setcompress(BaseCommand):
 class setcpu(BaseCommand):
     """
     .. code-block:: text
-    
+
         setcpu number
-    
+
     Defines the number of processing threads used for calculation.
-    
+
     Can be as high as the number of virtual threads existing on the system, which is the number of CPU cores or twice this number if hyperthreading (Intel HT) is available. The default value is the maximum number of threads available, so this should mostly be used to limit processing power. This is reset on every Siril run. See also SETMEM
-    
+
     Links: :ref:`setmem <setmem>`
     """
 
@@ -4151,11 +4242,11 @@ class setcpu(BaseCommand):
 class setext(BaseCommand):
     """
     .. code-block:: text
-    
+
         setext extension
-    
+
     Sets the extension used and recognized by sequences.
-    
+
     The argument **extension** can be "fit", "fts" or "fits"
     """
 
@@ -4167,16 +4258,16 @@ class setext(BaseCommand):
 class setfindstar(BaseCommand):
     """
     .. code-block:: text
-    
+
         setfindstar [reset] [-radius=] [-sigma=] [-roundness=] [-focal=] [-pixelsize=] [-convergence=] [ [-gaussian] | [-moffat] ] [-minbeta=] [-relax=on|off] [-minA=] [-maxA=] [-maxR=]
-    
+
     Defines stars detection parameters for FINDSTAR and REGISTER commands.
-    
+
     Passing no parameter lists the current values.
     Passing **reset** resets all values to defaults. You can then still pass values after this keyword.
-    
+
     Configurable values:
-    
+
     **-radius=** defines the radius of the initial search box and must be between 3 and 50.
     **-sigma=** defines the threshold above noise and must be greater than or equal to 0.05.
     **-roundness=** defines minimum star roundness and must between 0 and 0.95. **-maxR** allows an upper bound to roundness to be set, to visualize only the areas where stars are significantly elongated, do not change for registration.
@@ -4187,22 +4278,23 @@ class setfindstar(BaseCommand):
     If Moffat is selected, **-minbeta=** defines the minimum value of beta for which candidate stars will be accepted and must be greater than or equal to 0.0 and less than 10.0.
     **-convergence=** defines the number of iterations performed to fit PSF and should be set between 1 and 3 (more tolerant).
     **-relax=** relaxes the checks that are done on star candidates to assess if they are stars or not, to allow objects not shaped like stars to still be accepted (off by default)
-    
+
     Links: :ref:`findstar <findstar>`, :ref:`register <register>`, :ref:`psf <psf>`
-    
+
     The threshold for star detection is computed as the median of the image (which
     represents in general the background level) plus k times sigma, sigma being the
     standard deviation of the image (which is a good indication of the noise
     amplitude). If you have many stars in your images and a good signal/noise
     ratio, it may be a good idea to increase this value to speed-up the detection
     and false positives.
-    
+
     It is recommended to test the values used for a sequence with Siril's GUI,
     available in the dynamic PSF toolbox from the analysis menu. It may improve
     registration quality to increase the parameters, but it is also important to be
     able to detect several tens of stars in each image.
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         reset: bool = None,
@@ -4248,22 +4340,16 @@ class setfindstar(BaseCommand):
         self.append(CommandOption("maxA", maxA))
 
 
-
-
-
-
-
-
 class setmem(BaseCommand):
     """
     .. code-block:: text
-    
+
         setmem ratio
-    
+
     Sets a new ratio of used memory on free memory.
-    
+
     **Ratio** value should be between 0.05 and 2, depending on other activities of the machine. A higher ratio should allow siril to process faster, but setting the ratio of used memory above 1 will require the use of on-disk memory, which is very slow and unrecommended, even sometimes not supported, leading to system crash. A fixed amount of memory can also be set in the generic settings, with SET, instead of a ratio
-    
+
     Links: :ref:`set <set>`
     """
 
@@ -4275,19 +4361,20 @@ class setmem(BaseCommand):
 class setphot(BaseCommand):
     """
     .. code-block:: text
-    
+
         setphot [-inner=20] [-outer=30] [-aperture=10] [-dyn_ratio=4.0] [-gain=2.3] [-min_val=0] [-max_val=60000]
-    
+
     Gets or sets photometry settings, mostly used by SEQPSF. If arguments are provided, they will update the settings. None are mandatory, any can be provided, default values are shown in the command's syntax. At the end of the command, the active configuration will be printed.
-    
+
     The Aperture size is dynamic unless it is forced. If so, the **aperture** value from the settings is used. If dynamic, the radius of the aperture is defined by the supplied dynamic ratio ("radius/half-FWHM").
     Allowed values for the argument **-dyn_ratio** are in the range [1.0, 5.0]. A value outside this range will automatically set the aperture to the fixed value **-aperture**.
-    
+
     Gain is used only if not available from the FITS header
-    
+
     Links: :ref:`seqpsf <seqpsf>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         inner: t.Optional[int] = None,
@@ -4311,9 +4398,9 @@ class setphot(BaseCommand):
 class setref(BaseCommand):
     """
     .. code-block:: text
-    
+
         setref sequencename image_number
-    
+
     Sets the reference image of the sequence given in first argument. **image_number** is the sequential number of the image in the sequence, not the number in the filename, starting at 1
     """
 
@@ -4326,25 +4413,26 @@ class setref(BaseCommand):
 class spcc(BaseCommand):
     """
     .. code-block:: text
-    
+
         spcc [-limitmag=[+-]] [ { -monosensor= [ -rfilter= ] [-gfilter=] [-bfilter=] | -oscsensor= [-oscfilter=] [-osclpf=] } ] [-whiteref=] [ -narrowband [-rwl=] [-gwl=] [-bwl=] [-rbw=] [-gbw=] [-bbw=] ] [-bgtol=lower,upper] [ -atmos [-obsheight=] { [-pressure=] | [-slp=] } ]
-    
+
     Run the Spectrophotometric Color Correction on the loaded platesolved image.
-    
+
     The limit magnitude of stars is automatically computed from the size of the field of view, but can be altered by passing a +offset or -offset value to **-limitmag=**, or simply an absolute positive value for the limit magnitude.
     The star catalog used for SPCC is always Gaia DR3: by default the local Gaia DR3 xp_sampled catalog will be used if available but this can be overridden with **-catalog={gaia \| localgaia}**.
-    
+
     The names of sensors and filters can be specified using the following options: **-monosensor=**, **-rfilter=**, **-gfilter=**, **-bfilter=** or **-oscsensor=**, **-oscfilter=**, **-osclpf=**; the name of the white reference can be specified using the **-whiteref=** option. In all cases the name must be provided exactly as it is in the combo boxes in the SPCC tool. Note that sensor, filter and white reference names may contain spaces: in this case when using them as arguments to the **spcc** command, the entire argument must be enclosed in quotation marks, for example "-whiteref=Average Spiral Galaxy".
-    
+
     Narrowband mode can be selected using the argument **-narrowband**, in which case the previous filter arguments are ignored and NB filter wavelengths and bandwidths can be provided using **-rwl=**, **-rbw=**, **-gwl=**, **-gbw=**, **-bwl=** and **-bbw=**.
-    
+
     If one of the spectral data argument is omitted, the previously used value will be used.
-    
+
     Background reference outlier tolerance can be specified in sigma units using **-bgtol=lower,upper**: these default to -2.8 and +2.0.
-    
+
     Atmospheric correction can be applied by passing **-atmos**. In this case the following optional arguments apply: **-obsheight=** specifies the observer's height above sea level in metres (default 10), **-pressure=** specifies local atmospheric pressure at the observing site in hPa, or **-slp=** specifies sea-level atmospheric pressure in hPa (default pressure is 1013.25 hPa at sea level)
     """
 
+    # TODO: Review python types
     # TODO: clean up this command
     def __init__(
         self,
@@ -4397,30 +4485,31 @@ class spcc(BaseCommand):
 class spcc_list(BaseCommand):
     """
     .. code-block:: text
-    
+
         spcc_list { oscsensor | monosensor | redfilter | greenfilter | bluefilter | oscfilter | osclpf | whiteref }
-    
+
     Print a list of SPCC names available for use to define sensors, filters or white references using the **spcc** command. This command requires an argument to set which list is printed: the options are **oscsensor**, **monosensor**, **redfilter**, **greenfilter**, **bluefilter**, **oscfilter**, **osclpf** or **whiteref**.
     Note that sensor, filter and white reference names may contain spaces: in this case when using them as arguments to the **spcc** command, the entire argument must be enclosed in quotation marks, for example "-whiteref=Average Spiral Galaxy"
-    
+
     Links: :ref:`spcc <spcc>`
     """
 
+    # TODO: make this an enum
     def __init__(self, list_type: str):
         super().__init__()
-        # TODO: make this an enum
         self.append(CommandArgument(list_type))
 
 
 class split(BaseCommand):
     """
     .. code-block:: text
-    
+
         split file1 file2 file3 [-hsl | -hsv | -lab]
-    
+
     Splits the loaded color image into three distinct files (one for each color) and saves them in **file1**.fit, **file2**.fit and **file3**.fit files. A last argument can optionally be supplied, **-hsl**, **-hsv** or **lab** to perform an HSL, HSV or CieLAB extraction. If no option are provided, the extraction is of RGB type, meaning no conversion is done
     """
 
+    # TODO: make this an enum
     def __init__(
         self,
         file1: str,
@@ -4443,43 +4532,44 @@ class split(BaseCommand):
 class split_cfa(BaseCommand):
     """
     .. code-block:: text
-    
+
         split_cfa
-    
+
     Splits the loaded CFA image into four distinct files (one for each channel) and saves them in files
     """
+
 
 class stack(BaseCommand):
     """
     .. code-block:: text
-    
+
         stack seqfilename
         stack seqfilename { sum | min | max } [-output_norm] [-out=filename] [-maximize] [-upscale] [-32b]
         stack seqfilename { med | median } [-nonorm, -norm=] [-fastnorm] [-rgb_equal] [-output_norm] [-out=filename] [-32b]
         stack seqfilename { rej | mean } [rejection type] [sigma_low sigma_high]  [-rejmap[s]] [-nonorm, -norm=] [-fastnorm] [-overlap_norm] [-weight={noise|wfwhm|nbstars|nbstack}] [-feather=] [-rgb_equal] [-output_norm] [-out=filename] [-maximize] [-upscale] [-32b]
-    
+
     Stacks the **sequencename** sequence, using options.
-    
+
     Rejection type:
     The allowed types are: **sum**, **max**, **min**, **med** (or **median**) and **rej** (or **mean**). If no argument other than the sequence name is provided, sum stacking is assumed.
-    
+
     Stacking with rejection:
     Types **rej** or **mean** require the use of additional arguments for rejection type and values. The rejection type is one of **n[one], p[ercentile], s[igma], m[edian], w[insorized], l[inear], g[eneralized], [m]a[d]** for Percentile, Sigma, Median, Winsorized, Linear-Fit, Generalized Extreme Studentized Deviate Test or k-MAD clipping. If omitted, the default Winsorized is used.
     The **sigma low** and **sigma high** parameters of rejection are mandatory unless **none** is selected.
     Optionally, rejection maps can be created, showing where pixels were rejected in one (**-rejmap**) or two (**-rejmaps**, for low and high rejections) newly created images.
-    
+
     Normalization of input images:
     For **med** (or **median**) and **rej** (or **mean**) stacking types, different types of normalization are allowed: **-norm=add** for additive, **-norm=mul** for multiplicative. Options **-norm=addscale** and **-norm=mulscale** apply same normalization but with scale operations. **-nonorm** is the option to disable normalization. Otherwise addtive with scale method is applied by default.
     **-fastnorm** option specifies to use faster estimators for location and scale than the default IKSS.
     **-overlap_norm**, if passed, will compute normalization coeffcients on images overlaps instead of whole images (allowed only if **-maximize** is passed).
-    
+
     Other options for rejection stacking:
     Weighting can be applied to the images of the sequences using the option **-weight=** followed by:
     **noise** to add larger weights to frames with lower background noise.
     **nbstack** to weight input images based on how many images were used to create them, useful for live stacking.
     **nbstars** or **wfwhm** to weight input images based on number of stars or wFWHM computed during registration step.
     **-feather=** option will apply a feathering mask on each image borders over the distance (in pixels) given in argument.
-    
+
     Outputs:
     Result image name can be set with the **-out=** option. Otherwise, it will be named as **sequencename**\ \_stacked.fit.
     **-output_norm** applies a normalization to rescale result in the [0, 1] range (median and mean stacking only).
@@ -4487,19 +4577,19 @@ class stack(BaseCommand):
     **-upscale** option will upscale the sequence by a factor 2 prior to stacking using the registration data (applicable to all methods except median stacking).
     **-rgb_equal** will use normalization to equalize color image backgrounds, useful if PCC/SPCC or unlinked AUTOSTRETCH will not be used.
     **-32b** will override the bitdepth set in Preferences and save the stacked image in 32b.
-    
-    
+
+
     Filtering out images:
     Images to be stacked can be selected based on some filters, like manual selection or best FWHM, with some of the **-filter-\*** options.
-    
-    
+
+
     Links: :ref:`pcc <pcc>`, :ref:`spcc <spcc>`, :ref:`autostretch <autostretch>`
-    
+
     .. code-block:: text
-    
+
         [-filter-fwhm=value[%|k]] [-filter-wfwhm=value[%|k]] [-filter-round=value[%|k]] [-filter-bkg=value[%|k]]
         [-filter-nbstars=value[%|k]] [-filter-quality=value[%|k]] [-filter-incl[uded]]
-    
+
     Best images from the sequence can be stacked by using the filtering arguments. Each of these arguments can remove bad images based on a property their name contains, taken from the registration data, with either of the three types of argument values:
     - a numeric value for the worse image to keep depending on the type of data used (between 0 and 1 for roundness and quality, absolute values otherwise),
     - a percentage of best images to keep if the number is followed by a % sign,
@@ -4507,6 +4597,7 @@ class stack(BaseCommand):
     It is also possible to use manually selected images, either previously from the GUI or with the select or unselect commands, using the **-filter-included** argument.
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         base_name: str,
@@ -4551,17 +4642,18 @@ class stack(BaseCommand):
 class stackall(BaseCommand):
     """
     .. code-block:: text
-    
+
         stackall
         stackall { sum | min | max } [-maximize] [-upscale] [-32b]
         stackall { med | median } [-nonorm, norm=] [-32b]
         stackall { rej | mean } [rejection type] [sigma_low sigma_high] [-nonorm, norm=] [-overlap_norm] [-weight={noise|wfwhm|nbstars|nbstack}] [-feather=] [-rgb_equal] [-out=filename] [-maximize] [-upscale] [-32b]
-    
+
     Opens all sequences in the current directory and stacks them with the optionally specified stacking type and filtering or with sum stacking. See STACK command for options description
-    
+
     Links: :ref:`stack <stack>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         base_name: str,
@@ -4603,27 +4695,25 @@ class stackall(BaseCommand):
         self.append(CommandOption("out", out))
 
 
-
-
-
 class starnet(BaseCommand):
     """
     .. code-block:: text
-    
+
         starnet [-stretch] [-upscale] [-stride=value] [-nostarmask]
-    
+
     Calls `StarNet <https://www.starnetastro.com/>`__ to remove stars from the loaded image.
-    
+
     **Prerequisite:** StarNet is an external program, with no affiliation with Siril, and must be installed correctly prior the first use of this command, with the path to its CLI version installation correctly set in Preferences / Miscellaneous.
-    
+
     The starless image is loaded on completion, and a star mask image is created in the working directory unless the optional parameter **-nostarmask** is provided.
-    
+
     Optionally, parameters may be passed to the command:
     - The option **-stretch** is for use with linear images and will apply a pre-stretch before running StarNet and the inverse stretch to the generated starless and starmask images.
     - To improve star removal on images with very tight stars, the parameter **-upscale** may be provided. This will upsample the image by a factor of 2 prior to StarNet processing and rescale it to the original size afterwards, at the expense of more processing time.
     - The optional parameter **-stride=value** may be provided, however the author of StarNet *strongly* recommends that the default stride of 256 be used
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         stretch: bool = False,
@@ -4641,16 +4731,17 @@ class starnet(BaseCommand):
 class start_ls(BaseCommand):
     """
     .. code-block:: text
-    
+
         start_ls [-dark=filename] [-flat=filename] [-rotate] [-32bits]
-    
+
     Initializes a livestacking session, using the optional calibration files and waits for input files to be provided by the LIVESTACK command until STOP_LS is called. Default processing will use shift-only registration and 16-bit processing because it's faster, it can be changed to rotation with **-rotate** and **-32bits**
-    
+
     *Note that the live stacking commands put Siril in a state in which it's not able to process other commands. After START_LS, only LIVESTACK, STOP_LS and EXIT can be called until STOP_LS is called to return Siril in its normal, non-live-stacking, state*
-    
+
     Links: :ref:`livestack <livestack>`, :ref:`stop_ls <stop_ls>`, :ref:`exit <exit>`
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         dark: t.Optional[str] = None,
@@ -4668,12 +4759,13 @@ class start_ls(BaseCommand):
 class stat(BaseCommand):
     """
     .. code-block:: text
-    
+
         stat [-cfa] [main]
-    
+
     Returns statistics of the current image, the basic list by default or the main list if **main** is passed. If a selection is made, statistics are computed within the selection. If **-cfa** is passed and the image is CFA, statistics are made on per-filter extractions
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         cfa: bool = False,
@@ -4687,11 +4779,11 @@ class stat(BaseCommand):
 class stop_ls(BaseCommand):
     """
     .. code-block:: text
-    
+
         stop_ls
-    
+
     Stops the live stacking session. Only possible after START_LS
-    
+
     Links: :ref:`start_ls <start_ls>`
     """
 
@@ -4699,15 +4791,16 @@ class stop_ls(BaseCommand):
 class subsky(BaseCommand):
     """
     .. code-block:: text
-    
+
         subsky { -rbf | degree } [-dither] [-samples=20] [-tolerance=1.0] [-smooth=0.5] [-existing]
-    
+
     Computes a synthetic background gradient using either the polynomial function model of **degree** degrees or the RBF model (if **-rbf** is provided instead) and subtracts it from the image.
     The number of samples per horizontal line and the tolerance to exclude brighter areas can be adjusted with the optional arguments. Tolerance is in MAD units: median + tolerance \* mad.
     Dithering, required for low dynamic gradients, can be enabled with **-dither**.
     For RBF, the additional smoothing parameter is also available. To use pre-existing background samples (e.g. if you have set background samples using a Python script) the **-existing** argument must be used
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         use_rbf: bool = False,
@@ -4729,17 +4822,17 @@ class subsky(BaseCommand):
 class synthstar(BaseCommand):
     """
     .. code-block:: text
-    
+
         synthstar
-    
+
     Fixes imperfect stars from the loaded image. No matter how much coma, tracking drift or other distortion your stars have, if Siril's star finder routine can detect it, synthstar will fix it. To use intensive care, you may wish to manually detect all the stars you wish to fix. This can be done using the findstar console command or the Dynamic PSF dialog. If you have not run star detection, it will be run automatically with default settings.
-    
+
     For best results synthstar should be run before stretching.
-    
+
     The output of synthstar is a fully corrected synthetic star mask comprising perfectly round star PSFs (Moffat or Gaussian profiles depending on star saturation) computed to match the intensity, FWHM, hue and saturation measured for each star detected in the input image. This can then be recombined with the starless image to produce an image with perfect stars.
-    
+
     No parameters are required for this command
-    
+
     Links: :ref:`psf <psf>`
     """
 
@@ -4747,9 +4840,9 @@ class synthstar(BaseCommand):
 class threshlo(BaseCommand):
     """
     .. code-block:: text
-    
+
         threshlo level
-    
+
     Replaces values below **level** in the loaded image with **level**
     """
 
@@ -4761,9 +4854,9 @@ class threshlo(BaseCommand):
 class threshhi(BaseCommand):
     """
     .. code-block:: text
-    
+
         threshi level
-    
+
     Replaces values above **level** in the loaded image with **level**
     """
 
@@ -4775,9 +4868,9 @@ class threshhi(BaseCommand):
 class thresh(BaseCommand):
     """
     .. code-block:: text
-    
+
         thresh lo hi
-    
+
     Replaces values below **level** in the loaded image with **level**
     """
 
@@ -4790,15 +4883,15 @@ class thresh(BaseCommand):
 class trixel(BaseCommand):
     """
     .. code-block:: text
-    
+
         trixel [-p]
-    
+
     For developers.
-    
+
     Without any argument, lists all the trixels of level 3 visible in the plate-solved image. The stars from each trixel can then be shown with command CONESEARCH using **-trix=** followed by a visible trixel number
-    
+
     With argument **-p**, prints out all the valid stars from all the 512 level3 trixels to file "trixels.csv"
-    
+
     Links: :ref:`conesearch <conesearch>`
     """
 
@@ -4810,28 +4903,28 @@ class trixel(BaseCommand):
 class unclipstars(BaseCommand):
     """
     .. code-block:: text
-    
+
         unclipstars
-    
+
     Re-profiles clipped stars of the loaded image to desaturate them, scaling the output so that all pixel values are <= 1.0
     """
-
 
 
 class unpurple(BaseCommand):
     """
     .. code-block:: text
-    
+
         unpurple [-starmask] [-blue=value] [-thresh=value]
-    
+
     Applies a cosmetic filter to reduce effects of purple fringing on stars.
-    
+
     If the **-starmask** parameter is given, a star mask will be used to identify areas of the image to affect. If a Dynamic PSF has already been run, this will be used for the starmask, otherwise one will be created automatically. The **-mod=** parameter should be given a value somewhere around 0.14 to reduce the amount of purple. The **-thresh=** will specify the size modifier for each star in the starmask and should be large enough to cause the stars to be entirely processed without remaining purple fringing. The value should between 0 and 1, typically around 0.5.
     If the **-starmask** parameter is not given, the purple reduction will be applied across the entire image for any purple pixels with a luminance value higher than the given **-thresh=**. In this case, the **-thresh=** value should be reasonably low. This mode is useful for starmasks or other images without nebula or galaxy
-    
+
     Links: :ref:`psf <psf>`
     """
 
+    # TODO: Review python types
     def __init__(self, starmask: bool = False, blue: t.Optional[float] = None, thresh: t.Optional[float] = None):
         super().__init__()
         self.append(CommandFlag("starmask", starmask))
@@ -4842,14 +4935,15 @@ class unpurple(BaseCommand):
 class unselect(BaseCommand):
     """
     .. code-block:: text
-    
+
         unselect sequencename from to
-    
+
     Allows easy mass unselection of images in the sequence **sequencename** (from **from** to **to** included). See SELECT
-    
+
     Links: :ref:`select <select>`
     """
 
+    # TODO: Review python types
     def __init__(self, sequencename: str, from_: int, to: int):
         super().__init__()
         self.append(CommandArgument(sequencename))
@@ -4860,16 +4954,17 @@ class unselect(BaseCommand):
 class unsharp(BaseCommand):
     """
     .. code-block:: text
-    
+
         unsharp sigma multi
-    
+
     Applies an unsharp mask, actually a Gaussian filtered image with sigma **sigma** and a blend with the parameter **amount** used as such: out = in \* (1 + amount) + filtered \* (-amount).
-    
+
     See also GAUSS, the same without blending
-    
+
     Links: :ref:`gauss <gauss>`
     """
 
+    # TODO: Review python types
     def __init__(self, sigma: float, multi: float):
         super().__init__()
         self.append(CommandArgument(sigma))
@@ -4879,15 +4974,16 @@ class unsharp(BaseCommand):
 class update_key(BaseCommand):
     """
     .. code-block:: text
-    
+
         update_key key value [keycomment]
         update_key -delete key
         update_key -modify key newkey
         update_key -comment comment
-    
+
     Updates FITS keyword. Please note that the validity of **value** is not checked. This verification is the responsibility of the user. It is also possible to delete a key with the **-delete** option in front of the name of the key to be deleted, or to modify the key with the **-modify** option. The latter must be followed by the key to be modified and the new key name. Finally, the **-comment** option, followed by text, adds a comment to the FITS header. Please note that any text containing spaces must be enclosed in double quotation marks
     """
 
+    # TODO: Review python types
     def __init__(
         self,
         key: str,
@@ -4919,16 +5015,17 @@ class update_key(BaseCommand):
 class wavelet(BaseCommand):
     """
     .. code-block:: text
-    
+
         wavelet nbr_layers type
-    
+
     Computes the wavelet transform of the loaded image on (**nbr_layers**\ =1...n) layer(s) using linear (**type**\ =1) or bspline (**type**\ =2) version of the 'à trous' algorithm. The result is stored in a file as a structure containing the layers, ready for weighted reconstruction with WRECONS.
-    
+
     See also EXTRACT
-    
+
     Links: :ref:`wrecons <wrecons>`, :ref:`extract <extract>`
     """
 
+    # TODO: Review python types
     def __init__(self, nbr_layers: int, type_: int):
         super().__init__()
         self.append(CommandArgument(nbr_layers))
@@ -4938,18 +5035,19 @@ class wavelet(BaseCommand):
 class wiener(BaseCommand):
     """
     .. code-block:: text
-    
+
         wiener [-loadpsf=] [-alpha=]
-    
+
     Restores an image using the Wiener deconvolution method.
-    
+
     Optionally, a PSF created by MAKEPSF may be loaded using the argument **-loadpsf=\ filename**.
-    
+
     The parameter **-alpha=** provides the Gaussian noise modelled regularization factor
-    
+
     Links: :ref:`psf <psf>`, :ref:`makepsf <makepsf>`
     """
 
+    # TODO: Review python types
     def __init__(self, loadpsf: t.Optional[str] = None, alpha: t.Optional[float] = None):
         super().__init__()
         if loadpsf is not None:
@@ -4961,14 +5059,15 @@ class wiener(BaseCommand):
 class wrecons(BaseCommand):
     """
     .. code-block:: text
-    
+
         wrecons c1 c2 c3 ...
-    
+
     Reconstructs to current image from the layers previously computed with wavelets and weighted with coefficients **c1**, **c2**, ..., **cn** according to the number of layers used for wavelet transform, after the use of WAVELET
-    
+
     Links: :ref:`wavelet <wavelet>`
     """
 
+    # TODO: Review python types
     def __init__(self, *coefficients: float):
         super().__init__()
         for coefficient in coefficients:

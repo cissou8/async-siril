@@ -177,8 +177,9 @@ class SirilCli(object):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         from .command import exit
+
         await self.command(exit())
-    
+
     async def start(self):
         """Manually start the Siril process and pipes"""
         await self._start()
@@ -188,7 +189,7 @@ class SirilCli(object):
         """Manually stop the Siril process and pipes"""
         await self._stop()
         logger.info("SirilCli stopped")
-    
+
     def _find_siril_cli(self, siril_exe: str = "siril-cli") -> str:
         """Find the path to the Siril CLI executable"""
         if os.path.exists(siril_exe):
@@ -206,9 +207,9 @@ class SirilCli(object):
         elif system == "Linux":
             possible_paths.append("/usr/bin/siril")
             possible_paths.append("/usr/local/bin/siril")
-        
+
         for path in possible_paths:
             if os.path.exists(path):
                 return path
-        
+
         raise FileNotFoundError("Siril CLI executable not found")

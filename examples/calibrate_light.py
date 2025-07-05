@@ -16,11 +16,14 @@ from async_siril.command import fits_extension
 
 log = structlog.stdlib.get_logger()
 
+
 @a.define(kw_only=True, frozen=True)
 class CalibrateLight:
     raw_folder: t.Annotated[pathlib.Path, cappa.Arg(help="Path to the raw folder of Bias frames")]
     output: t.Annotated[pathlib.Path, cappa.Arg(help="Path to the output folder")]
-    ext: t.Annotated[fits_extension, cappa.Arg(short=True, default=fits_extension.FITS_EXT_FIT, help="Extension of the Bias frames")]
+    ext: t.Annotated[
+        fits_extension, cappa.Arg(short=True, default=fits_extension.FITS_EXT_FIT, help="Extension of the Bias frames")
+    ]
 
     dark: t.Annotated[t.Optional[pathlib.Path], cappa.Arg(short=True, help="Path to the master dark")]
     flat: t.Annotated[t.Optional[pathlib.Path], cappa.Arg(short=True, help="Path to the master flat")]
@@ -49,7 +52,7 @@ class CalibrateLight:
         with tempfile.TemporaryDirectory(dir=self.raw_folder) as tempdir:  # type: ignore
             temp = pathlib.Path(tempdir)
             log.info(f"temp dir: {temp}")
-            
+
             async with SirilCli(directory=self.raw_folder) as siril:
                 await siril.command(setext(self.ext))
                 await siril.command(set32bits())
@@ -74,7 +77,7 @@ class CalibrateLight:
                 await self._move_converted_files(conversion, prefix="pp_")
 
         log.info("Light calibrated and saved to: {self.output}")
-    
+
     async def _all_color_raw_frames(self) -> bool:
         from astropy.io import fits  # type: ignore
         from astropy.io.fits import PrimaryHDU  # type: ignore
@@ -93,6 +96,7 @@ class CalibrateLight:
         for entry in conversion.entries:
             converted_file = conversion.file.parent.joinpath(f"{prefix}{entry.converted_file.name}")
             converted_file.rename(self.output / f"{prefix}{entry.original_file.name}")
+
 
 def main() -> None:  # pragma: no cover
     try:

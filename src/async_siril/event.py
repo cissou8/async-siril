@@ -92,7 +92,7 @@ class AsyncSirilEventConsumer:
         if self._running:
             logger.info("Stopping consumer fifo pipe")
             self._running = False
-        
+
         if self._task:
             self._task.cancel()
 
@@ -114,7 +114,7 @@ class AsyncSirilEventConsumer:
                             self.siril_ready.set_result(None)
                         else:
                             self.queue.put_nowait(event)
-                    
+
                     logger.info("EOF from the consumer")
             except Exception as e:
                 logger.info(f"Error in consumer task: {e}")
@@ -130,7 +130,7 @@ class AsyncSirilEventConsumer:
                 self.fifo_closed.set_result(None)
                 break
             yield SirilEvent(line.rstrip())
-    
+
     def _safe_remove_fifo(self):
         try:
             if os.path.exists(self.fifo_path):
@@ -178,7 +178,7 @@ class AsyncSirilCommandProducer:
         """Main producer loop that waits for messages and writes them to the FIFO."""
         if not os.path.exists(self.fifo_path):
             os.mkfifo(self.fifo_path)
-        
+
         try:
             # Block until a reader opens the FIFO
             self._writer = await self._loop.run_in_executor(None, lambda: open(self.fifo_path, "w"))
@@ -198,7 +198,7 @@ class AsyncSirilCommandProducer:
     def _write_line(self, message: str):
         self._writer.write(message + "\n")
         self._writer.flush()
-    
+
     def _safe_remove_fifo(self):
         try:
             if os.path.exists(self.fifo_path):
