@@ -5,7 +5,6 @@ import typing as t
 from enum import Enum
 from dataclasses import dataclass
 
-
 @dataclass
 class Rect:
     x: int
@@ -15,6 +14,14 @@ class Rect:
 
     def __str__(self):
         return f"{self.x} {self.y} {self.width} {self.height}"
+
+
+class SigmaRange:
+    low: float
+    high: float
+
+    def __str__(self):
+        return f"{self.low} {self.high}"
 
 
 class sequence_filter_with_value:
@@ -164,3 +171,44 @@ class catalog_option(Enum):
     APASS = "apass"
     LOCAL_GAIA = "localgaia"
     GAIA = "gaia"
+
+class online_catalog(Enum):
+    TYCHO2 = "tycho2"
+    NOMAD = "nomad"
+    GAIA = "gaia"
+    LOCAL_GAIA = "localgaia"
+    PPMXL = "ppmxl"
+    BSC = "bsc"
+    APASS = "apass"
+    GCVS = "gcvsc"
+    VSX = "vsx"
+    SIMBAD = "simbad"
+    AAVSO_VSP = "aavso_chart"
+    EXOPLANET_ARCHIVE = "exo"
+    PGC = "pgc" 
+    SOLSYS = "solsys"
+
+class extract_resample(Enum):
+    HA = "ha"
+    OIII = "oiii"
+    
+class ght_weighting(Enum):
+    HUMAN = "human"
+    EVEN = "even"
+    INDEPENDENT = "independent"
+    SATURATION = "sat"
+
+class graxpert_compute(Enum):
+    GPU = "gpu"
+    CPU = "cpu"
+
+class Channel(Enum):
+    RED = 0
+    GREEN = 1
+    BLUE = 2
+
+class limit_option(Enum):
+    CLIP = "clip"
+    POS_RESCALE = "posrescale"
+    RESCALE = "rescale"
+    
