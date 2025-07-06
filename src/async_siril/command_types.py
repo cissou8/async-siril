@@ -198,17 +198,76 @@ class ght_weighting(Enum):
     INDEPENDENT = "independent"
     SATURATION = "sat"
 
-class graxpert_compute(Enum):
-    GPU = "gpu"
-    CPU = "cpu"
+
 
 class Channel(Enum):
     RED = 0
     GREEN = 1
     BLUE = 2
 
+class channel_label(Enum):
+    RED = "R"
+    GREEN = "G"
+    BLUE = "B"
+    RED_GREEN = "RG"
+    RED_BLUE = "RB"
+    GREEN_BLUE = "GB"
+    ALL = "RGB"
+
+
 class limit_option(Enum):
     CLIP = "clip"
     POS_RESCALE = "posrescale"
     RESCALE = "rescale"
     
+class wavelet_type(Enum):
+    LINEAR = 1
+    BSPLINE = 2
+
+class star_range(Enum):
+    NARROW = "narrow"
+    WIDE = "wide"
+
+class find_star_catalog(Enum):
+    NOMAD = "nomad"
+    APASS = "apass"
+
+class graxpert_compute(Enum):
+    GPU = "gpu"
+    CPU = "cpu"
+
+class graxpert_algo(Enum):
+    AI = "ai"
+    RBF = "rbf"
+    KRIGING = "kriging"
+    SPLINE = "spline"
+
+class graxpert_mode(Enum):
+    SUB = "sub"
+    DIV = "div"
+
+class graxpert_kernel(Enum):
+    THINPLATE = "thinplate"
+    QUINTIC = "quintic"
+    CUBIC = "cubic"
+    LINEAR = "linear"
+
+class split_option(Enum):
+    HSL = "hsl"
+    HSV = "hsv"
+    CIELAB = "lab"
+
+class spcc_list_type(Enum):
+    OSCSENSOR = "oscsensor"
+    MONOSENSOR = "monosensor"
+    REDFILTER = "redfilter"
+    GREENFILTER = "greenfilter"
+    BLUEFILTER = "bluefilter"
+    OSCFILTER = "oscfilter"
+    OSCLPF = "osclpf"
+    WHITEREF = "whiteref"
+
+class stat_detail(Enum):
+    BASIC = "basic"
+    MAIN = "main"
+    FULL = "full"

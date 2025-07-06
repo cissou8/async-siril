@@ -10,6 +10,7 @@ import structlog.stdlib
 import typing as t
 
 from .command_types import (
+    graxpert_algo,
     stack_weighting,
     sequence_framing,
     compression_type,
@@ -33,6 +34,15 @@ from .command_types import (
     Channel,
     SigmaRange,
     limit_option,
+    split_option,
+    spcc_list_type,
+    stat_detail,
+    graxpert_kernel,
+    graxpert_mode,
+    wavelet_type,
+    channel_label,
+    star_range,    
+    find_star_catalog,
 )
 
 
@@ -1063,31 +1073,25 @@ class findcompstars(BaseCommand):
     Links: :ref:`light_curve <light_curve>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         star_name: str,
-        narrow: bool = False,
-        catalog: t.Optional[str] = None,
-        dvmag: t.Optional[float] = None,
-        dbv: t.Optional[float] = None,
-        emag: t.Optional[float] = None,
+        star_range: t.Optional[star_range] = None,
+        catalog: t.Optional[find_star_catalog] = None,
+        dvmag: t.Optional[int] = 3,
+        dbv: t.Optional[float] = 0.5,
+        emag: t.Optional[float] = 0.03,
         out: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(star_name))
-        if narrow:
-            self.append(CommandFlag("narrow", narrow))
-        if catalog is not None:
-            self.append(CommandOption("catalog", catalog))
-        if dvmag is not None:
-            self.append(CommandOption("dvmag", dvmag))
-        if dbv is not None:
-            self.append(CommandOption("dbv", dbv))
-        if emag is not None:
-            self.append(CommandOption("emag", emag))
-        if out is not None:
-            self.append(CommandOption("out", out))
+        if star_range is not None:
+            self.append(CommandFlag(star_range.value))
+        self.append(CommandOption("catalog", catalog.value))
+        self.append(CommandOption("dvmag", dvmag))
+        self.append(CommandOption("dbv", dbv))
+        self.append(CommandOption("emag", emag))
+        self.append(CommandOption("out", out))
 
 
 class findstar(BaseCommand):
@@ -1327,12 +1331,11 @@ class graxpert_bg(BaseCommand):
     **-ai_batch_size=** sets the batch size for AI operations (denoising and the background removal AI algorithm) (default = 4: bigger batch sizes may improve performance, especially on CPU, but require more memory). The optional argument **-ai_version=** forces a specific version of the AI model. Note that GraXpert AI background removal is comparatively fast anyway so at present there is little need to specify an older model for speed reasons even if running in CPU-only mode. If this argument is omitted, the latest available AI model version is used
     """
 
-    # TODO: Review python types
     def __init__(
         self,
-        algo: t.Optional[str] = None,
-        mode: t.Optional[str] = None,
-        kernel: t.Optional[str] = None,
+        algo: t.Optional[graxpert_algo] = None,
+        mode: t.Optional[graxpert_mode] = None,
+        kernel: t.Optional[graxpert_kernel] = None,
         ai_batch_size: t.Optional[int] = None,
         pts_per_row: t.Optional[int] = None,
         splineorder: t.Optional[int] = None,
@@ -1344,7 +1347,6 @@ class graxpert_bg(BaseCommand):
         keep_bg: t.Optional[bool] = None,
     ):
         super().__init__()
-        # TODO: review - make graxpert options enums
         self.append(CommandOption("algo", algo))
         self.append(CommandOption("mode", mode))
         self.append(CommandOption("kernel", kernel))
@@ -1676,27 +1678,35 @@ class light_curve(BaseCommand):
     Links: :ref:`seqpsf <seqpsf>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         sequencename: str,
         channel: str,
-        autoring: t.Optional[bool] = None,
-        at: t.Optional[str] = None,
-        wcs: t.Optional[str] = None,
-        refat: t.Optional[str] = None,
-        refwcs: t.Optional[str] = None,
+        autoring: bool = False,
+        at: t.Optional[t.Tuple[int, int]] = None,
+        wcs: t.Optional[t.Tuple[float, float]] = None,
+        refat: t.Optional[t.Tuple[int, int]] = None,
+        refwcs: t.Optional[t.Tuple[float, float]] = None,
         ninastars: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequencename))
         self.append(CommandArgument(channel))
         self.append(CommandFlag("autoring", autoring))
-        self.append(CommandOption("at", at))
-        self.append(CommandOption("wcs", wcs))
-        self.append(CommandOption("refat", refat))
-        self.append(CommandOption("refwcs", refwcs))
-        self.append(CommandOption("ninastars", ninastars))
+
+        if at is not None or wcs is not None:
+            if at is not None:
+                self.append(CommandOption("at", f"{at[0]},{at[1]}"))
+            elif wcs is not None:
+                self.append(CommandOption("wcs", f"{wcs[0]},{wcs[1]}"))
+
+            if refat is not None or refwcs is not None:
+                if refat is not None:
+                    self.append(CommandOption("refat", f"{refat[0]},{refat[1]}"))
+                elif refwcs is not None:
+                    self.append(CommandOption("refwcs", f"{refwcs[0]},{refwcs[1]}"))
+        else:
+            self.append(CommandOption("ninastars", ninastars))
 
 
 class limit(BaseCommand):
@@ -1781,19 +1791,18 @@ class linstretch(BaseCommand):
     Optionally the parameter **-sat** may be used to apply the linear stretch to the image saturation channel. This argument only works if all channels are selected. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         BP: float,
         sat: t.Optional[bool] = None,
         clipmode: t.Optional[clipmode] = None,
-        channels: t.Optional[str] = None,
+        channels: t.Optional[channel_label] = None,
     ):
         super().__init__()
         self.append(CommandOption("BP", BP))
         self.append(CommandFlag("sat", sat))
-        self.append(CommandOption("clipmode", clipmode))
         self.append(CommandArgument(channels))
+        self.append(CommandOption("clipmode", clipmode))
 
 
 class livestack(BaseCommand):
@@ -1985,16 +1994,15 @@ class modasinh(BaseCommand):
     Optionally the parameter **[channels]** may be used to specify the channels to apply the stretch to: this may be R, G, B, RG, RB or GB. The default is all channels. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         D: float,
-        LP: float = 0.0,
-        SP: float = 0.0,
-        HP: float = 1.0,
+        LP: t.Optional[float] = None,
+        SP: t.Optional[float] = None,
+        HP: t.Optional[float] = None,
         clipmode: t.Optional[clipmode] = None,
         weight: t.Optional[ght_weighting] = None,
-        channels: str = "RGB",
+        channels: t.Optional[channel_label] = None,
     ):
         super().__init__()
         self.append(CommandOption("D", D))
@@ -2021,19 +2029,17 @@ class mtf(BaseCommand):
     Links: :ref:`autostretch <autostretch>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         low: float,
         midtones: float,
         high: float,
-        channels: str = "RGB",
+        channels: t.Optional[channel_label] = None,
     ):
         super().__init__()
         self.append(CommandArgument(low))
         self.append(CommandArgument(midtones))
         self.append(CommandArgument(high))
-        # TODO: make an enum for these channels
         self.append(CommandArgument(channels))
 
 
@@ -2129,7 +2135,6 @@ class pcc(BaseCommand):
     Background reference outlier tolerance can be specified in sigma units using **-bgtol=lower,upper**: these default to -2.8 and +2.0
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         limit_mag: magnitude_option = magnitude_option.DEFAULT_MAGNITUDE,
@@ -2145,10 +2150,8 @@ class pcc(BaseCommand):
                 self.append(CommandOption("limitmag", f"-{magnitude_value}"))
         elif limit_mag == magnitude_option.ABSOLUTE_MAGNITUDE:
             self.append(CommandOption("limitmag", magnitude_value))
-        if catalog is not None:
-            self.append(CommandOption("catalog", catalog))
-        if bgtol is not None:
-            self.append(CommandOption("bgtol", f"{bgtol[0]},{bgtol[1]}"))
+        self.append(CommandOption("catalog", catalog))
+        self.append(CommandOption("bgtol", f"{bgtol[0]},{bgtol[1]}"))
 
 
 class platesolve(BaseCommand):
@@ -2233,17 +2236,20 @@ class pm(BaseCommand):
     Image can be rescaled with the option **-rescale** followed by **low** and **high** values in the range [0, 1]. If no low and high values are provided, default values are set to 0 and 1. Another optional argument, **-nosum** tells Siril not to sum exposure times. This impacts FITS keywords such as LIVETIME and STACKCNT
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         expression: str,
-        rescale: t.Optional[t.Tuple[float, float]] = None,
+        rescale: bool = False,
+        rescale_low: t.Optional[float] = None,
+        rescale_high: t.Optional[float] = None,
         nosum: bool = False,
     ):
         super().__init__()
         self.append(CommandArgument(expression))
-        if rescale is not None:
-            self.append(CommandOption("rescale", f"{rescale[0]} {rescale[1]}"))
+        if rescale:
+            self.append(CommandFlag("rescale", rescale))
+            self.append(CommandArgument(rescale_low))
+            self.append(CommandArgument(rescale_high))
         self.append(CommandFlag("nosum", nosum))
 
 
@@ -2266,13 +2272,10 @@ class profile(BaseCommand):
     The argument **"-title=\ My Title"** sets a custom title "My Title"
     """
 
-    # TODO: Review python types
     def __init__(
         self,
-        from_x: int,
-        from_y: int,
-        to_x: int,
-        to_y: int,
+        start: t.Tuple[int, int],
+        end: t.Tuple[int, int],
         tri: bool = False,
         cfa: bool = False,
         arcsec: bool = False,
@@ -2284,27 +2287,21 @@ class profile(BaseCommand):
         title: t.Optional[str] = None,
     ):
         super().__init__()
-        self.append(CommandOption("from", f"{from_x},{from_y}"))
-        self.append(CommandOption("to", f"{to_x},{to_y}"))
-        if tri:
-            self.append(CommandFlag("tri", tri))
-        if cfa:
-            self.append(CommandFlag("cfa", cfa))
-        if arcsec:
-            self.append(CommandFlag("arcsec", arcsec))
-        # TODO: model with enum
+        self.append(CommandOption("from", f"{start[0]},{start[1]}"))
+        self.append(CommandOption("to", f"{end[0]},{end[1]}"))
+        self.append(CommandFlag("tri", tri))
+        self.append(CommandFlag("cfa", cfa))
+        self.append(CommandFlag("arcsec", arcsec))
+
         if savedat:
             self.append(CommandFlag("savedat", savedat))
-        if filename is not None:
+        elif filename is not None:
             self.append(CommandOption("filename", filename))
-        if layer is not None:
-            self.append(CommandOption("layer", layer))
-        if width is not None:
-            self.append(CommandOption("width", width))
-        if spacing is not None:
-            self.append(CommandOption("spacing", spacing))
-        if title is not None:
-            self.append(CommandOption("title", title))
+
+        self.append(CommandOption("layer", layer))
+        self.append(CommandOption("width", width))
+        self.append(CommandOption("spacing", spacing))
+        self.append(CommandOption("title", title))
 
 
 class psf(BaseCommand):
@@ -2465,7 +2462,6 @@ class resample(BaseCommand):
     Clamping of the bicubic and lanczos4 interpolation methods is the default, to avoid artefacts, but can be disabled with the **-noclamp** argument
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         factor: t.Optional[float] = None,
@@ -3224,37 +3220,29 @@ class seqght(BaseCommand):
     Links: :ref:`ght <ght>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
         D: float,
-        B: float,
-        LP: float,
-        SP: float,
-        HP: float,
+        B: t.Optional[float] = None,
+        LP: t.Optional[float] = None,
+        SP: t.Optional[float] = None,
+        HP: t.Optional[float] = None,
         clipmode: t.Optional[clipmode] = None,
-        human: t.Optional[bool] = None,
-        even: t.Optional[bool] = None,
-        independent: t.Optional[bool] = None,
-        sat: t.Optional[bool] = None,
+        weight: t.Optional[stack_weighting] = None,
         channels: t.Optional[str] = None,
         prefix: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
-        self.append(CommandArgument(D))
-        self.append(CommandArgument(B))
-        self.append(CommandArgument(LP))
-        self.append(CommandArgument(SP))
-        self.append(CommandArgument(HP))
-        if clipmode is not None:
-            self.append(CommandOption("clipmode", clipmode))
-        # TODO: make these an enum like GHT
-        self.append(CommandOption("human", human))
-        self.append(CommandOption("even", even))
-        self.append(CommandOption("independent", independent))
-        self.append(CommandOption("sat", sat))
+        self.append(CommandOption("D", D))
+        self.append(CommandOption("B", B))
+        self.append(CommandOption("LP", LP))
+        self.append(CommandOption("SP", SP))
+        self.append(CommandOption("HP", HP))
+        self.append(CommandOption("clipmode", clipmode))
+        if weight is not None:
+            self.append(CommandFlag(weight.value))
         self.append(CommandOption("channels", channels))
         self.append(CommandOption("prefix", prefix))
 
@@ -3270,21 +3258,19 @@ class seqgraxpert_bg(BaseCommand):
     Links: :ref:`graxpert_bg <graxpert_bg>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
-        algo: t.Optional[str] = None,
-        mode: t.Optional[str] = None,
-        kernel: t.Optional[str] = None,
-        ai_batch_size: t.Optional[str] = None,
-        pts_per_row: t.Optional[str] = None,
-        splineorder: t.Optional[str] = None,
-        samplesize: t.Optional[str] = None,
-        smoothing: t.Optional[str] = None,
-        bgtol: t.Optional[str] = None,
-        gpu: t.Optional[bool] = None,
-        cpu: t.Optional[bool] = None,
+        algo: t.Optional[graxpert_algo] = None,
+        mode: t.Optional[graxpert_mode] = None,
+        kernel: t.Optional[graxpert_kernel] = None,
+        ai_batch_size: t.Optional[int] = None,
+        pts_per_row: t.Optional[int] = None,
+        splineorder: t.Optional[int] = None,
+        samplesize: t.Optional[int] = None,
+        smoothing: t.Optional[float] = None,
+        bgtol: t.Optional[float] = None,
+        compute: t.Optional[graxpert_compute] = None,
         keep_bg: t.Optional[bool] = None,
     ):
         super().__init__()
@@ -3298,8 +3284,8 @@ class seqgraxpert_bg(BaseCommand):
         self.append(CommandOption("samplesize", samplesize))
         self.append(CommandOption("smoothing", smoothing))
         self.append(CommandOption("bgtol", bgtol))
-        self.append(CommandOption("gpu", gpu))
-        self.append(CommandOption("cpu", cpu))
+        if compute is not None:
+            self.append(CommandFlag(compute.value))
         self.append(CommandOption("keep_bg", keep_bg))
 
 
@@ -3314,20 +3300,17 @@ class seqgraxpert_denoise(BaseCommand):
     Links: :ref:`graxpert_denoise <graxpert_denoise>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
         strength: t.Optional[str] = None,
-        gpu: t.Optional[bool] = None,
-        cpu: t.Optional[bool] = None,
+        compute: t.Optional[graxpert_compute] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
         self.append(CommandOption("strength", strength))
-        # TODO: make this an enum
-        self.append(CommandOption("gpu", gpu))
-        self.append(CommandOption("cpu", cpu))
+        if compute is not None:
+            self.append(CommandFlag(compute.value))
 
 
 class seqheader(BaseCommand):
@@ -3339,12 +3322,18 @@ class seqheader(BaseCommand):
     Prints the FITS header value corresponding to the given keys for all images in the sequence. You can write several keys in a row, separated by a space. The **-out=** option, followed by a file name, allows you to print the output in a csv file. The **-sel** option limits the output to the images selected in the sequence
     """
 
-    # TODO: Review python types
-    def __init__(self, sequence: str, keywords: t.List[str], sel: t.Optional[bool] = None, out: t.Optional[str] = None):
+    def __init__(
+        self,
+        sequence: str,
+        keywords: t.List[str],
+        selected: bool = False,
+        out: t.Optional[str] = None,
+    ):
         super().__init__()
         self.append(CommandArgument(sequence))
-        self.append(CommandArgument(keywords))
-        self.append(CommandOption("sel", sel))
+        for keyword in keywords:
+            self.append(CommandArgument(keyword))
+        self.append(CommandOption("sel", selected))
         self.append(CommandOption("out", out))
 
 
@@ -3565,12 +3554,11 @@ class seqprofile(BaseCommand):
     Generates an intensity profile plot between 2 points in each image in the sequence. After the mandatory first argument stating the sequence to process, the other arguments are the same as for the **profile** command. If processing a sequence and it is desired to have the current image number and total number of images displayed in the format "My Sequence (1 / 5)", the given title should end with () (e.g. "My Sequence ()" and the numbers will be populated automatically)
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
-        from_: t.Tuple[int, int],
-        to: t.Tuple[int, int],
+        start: t.Tuple[int, int],
+        end: t.Tuple[int, int],
         tri: t.Optional[bool] = None,
         cfa: t.Optional[bool] = None,
         arcsec: t.Optional[bool] = None,
@@ -3578,43 +3566,49 @@ class seqprofile(BaseCommand):
         layer: t.Optional[str] = None,
         width: t.Optional[int] = None,
         spacing: t.Optional[int] = None,
-        xaxis: t.Optional[str] = None,
-        wavenumber1: t.Optional[int] = None,
+        xaxis: bool = False,
+        axis_wave_length: t.Optional[float] = None,
+        axis_wave_number: t.Optional[float] = None,
+        wave_number_1: t.Optional[int] = None,
+        wave_length_1: t.Optional[int] = None,
         wn1at: t.Optional[t.Tuple[int, int]] = None,
-        wavenumber2: t.Optional[int] = None,
+        wave_number_2: t.Optional[int] = None,
+        wave_length_2: t.Optional[int] = None,
         wn2at: t.Optional[t.Tuple[int, int]] = None,
         title: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
-        self.append(CommandOption("from", f"{from_[0]},{from_[1]}"))
-        self.append(CommandOption("to", f"{to[0]},{to[1]}"))
-        if tri:
-            self.append(CommandFlag("tri", tri))
-        if cfa:
-            self.append(CommandFlag("cfa", cfa))
-        if arcsec:
-            self.append(CommandFlag("arcsec", arcsec))
-        if savedat:
-            self.append(CommandFlag("savedat", savedat))
-        if layer is not None:
-            self.append(CommandOption("layer", layer))
-        if width is not None:
-            self.append(CommandOption("width", width))
-        if spacing is not None:
-            self.append(CommandOption("spacing", spacing))
-        if xaxis is not None:
-            self.append(CommandOption("xaxis", xaxis))
-        if wavenumber1 is not None:
-            self.append(CommandOption("wavenumber1", wavenumber1))
-        if wn1at is not None:
+        self.append(CommandOption("from", f"{start[0]},{start[1]}"))
+        self.append(CommandOption("to", f"{end[0]},{end[1]}"))
+        self.append(CommandFlag("tri", tri))
+        self.append(CommandFlag("cfa", cfa))
+        self.append(CommandFlag("arcsec", arcsec))
+        self.append(CommandFlag("savedat", savedat))
+        self.append(CommandOption("layer", layer))
+        self.append(CommandOption("width", width))
+        self.append(CommandOption("spacing", spacing))
+
+        if xaxis:
+            if axis_wave_length is not None:
+                self.append(CommandOption("xaxis", axis_wave_length))
+            elif axis_wave_number is not None:
+                self.append(CommandOption("xaxis", axis_wave_number))
+        
+        if wave_number_1 is not None or wave_length_1 is not None:
+            if wave_number_1 is not None:
+                self.append(CommandOption("wavenumber1", wave_number_1))
+            elif wave_length_1 is not None:
+                self.append(CommandOption("wavelength1", wave_length_1))
             self.append(CommandOption("wn1at", f"{wn1at[0]},{wn1at[1]}"))
-        if wavenumber2 is not None:
-            self.append(CommandOption("wavenumber2", wavenumber2))
-        if wn2at is not None:
+            
+            if wave_number_2 is not None:
+                self.append(CommandOption("wavenumber2", wave_number_2))
+            elif wave_length_2 is not None:
+                self.append(CommandOption("wavelength2", wave_length_2))
             self.append(CommandOption("wn2at", f"{wn2at[0]},{wn2at[1]}"))
-        if title is not None:
-            self.append(CommandOption("title", title))
+
+        self.append(CommandOption("title", title))
 
 
 class seqpsf(BaseCommand):
@@ -3636,11 +3630,10 @@ class seqpsf(BaseCommand):
     Links: :ref:`psf <psf>`, :ref:`light_curve <light_curve>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
-        channel: t.Optional[int] = None,
+        channel: str,
         at: t.Optional[t.Tuple[int, int]] = None,
         wcs: t.Optional[t.Tuple[float, float]] = None,
     ):
@@ -3649,7 +3642,7 @@ class seqpsf(BaseCommand):
         self.append(CommandArgument(channel))
         if at is not None:
             self.append(CommandOption("at", f"{at[0]},{at[1]}"))
-        if wcs is not None:
+        elif wcs is not None:
             self.append(CommandOption("wcs", f"{wcs[0]},{wcs[1]}"))
 
 
@@ -3705,10 +3698,12 @@ class seqplatesolve(BaseCommand):
         super().__init__()
         self.append(CommandArgument(sequence))
         self.append(CommandArgument(image_center))
-        self.append(CommandFlag("noflip", noflip))
-        self.append(CommandFlag("platesolve", force_plate_solve))
         self.append(CommandOption("focal", focal_length))
         self.append(CommandOption("pixelsize", pixel_size))
+
+        self.append(CommandFlag("noflip", noflip))
+        self.append(CommandFlag("platesolve", force_plate_solve))
+        
         if limit_mag == magnitude_option.MAGNITUDE_OFFSET and magnitude_value != 0.0:
             if magnitude_value > 0.0:
                 self.append(CommandOption("limitmag", f"+{magnitude_value}"))
@@ -3738,7 +3733,6 @@ class seqresample(BaseCommand):
     The output sequence name starts with the prefix "scaled\_" unless otherwise specified with **-prefix=** option
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
@@ -3750,9 +3744,12 @@ class seqresample(BaseCommand):
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
-        self.append(CommandOption("scale", scale))
-        self.append(CommandOption("width", width))
-        self.append(CommandOption("height", height))
+        if scale is not None:
+            self.append(CommandOption("scale", scale))
+        elif width is not None:
+            self.append(CommandOption("width", width))
+        elif height is not None:
+            self.append(CommandOption("height", height))
         self.append(CommandOption("interp", interpolation))
         self.append(CommandOption("prefix", prefix))
 
@@ -3887,18 +3884,17 @@ class seqstat(BaseCommand):
     Links: :ref:`stat <stat>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         sequence: str,
         output_file: str,
-        option: t.Optional[str] = None,
+        option: t.Optional[stat_detail] = None,
         cfa: bool = False,
     ):
         super().__init__()
         self.append(CommandArgument(sequence))
         self.append(CommandArgument(output_file))
-        self.append(CommandOption("option", option))
+        self.append(CommandArgument(option))
         self.append(CommandFlag("cfa", cfa))
 
 
@@ -3916,19 +3912,26 @@ class seqsubsky(BaseCommand):
     Links: :ref:`subsky <subsky>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
-        base_name: str,
+        sequence: str,
+        use_rbf: bool = False,
+        degree: int = 4,
+        dither: bool = False,
+        existing: bool = False,
         samples: t.Optional[int] = None,
         tolerance: t.Optional[float] = None,
+        smooth: t.Optional[float] = None,
         prefix: t.Optional[str] = None,
     ):
         super().__init__()
-        self.append(CommandArgument(base_name))
-        # polynomial version with degree 1 should always be used in sequence processing
-        # TODO: implement all the options
-        self.append(CommandArgument("1"))
+        self.append(CommandArgument(sequence))
+        if use_rbf:
+            self.append(CommandFlag("rbf", use_rbf))
+            self.append(CommandOption("smooth", smooth))
+        else:
+            self.append(CommandArgument(degree))
+        self.append(CommandFlag("nodither", dither))
         self.append(CommandOption("samples", samples))
         self.append(CommandOption("tolerance", tolerance))
         self.append(CommandOption("prefix", prefix))
@@ -4165,25 +4168,24 @@ class setfindstar(BaseCommand):
     able to detect several tens of stars in each image.
     """
 
-    # TODO: Review python types
     def __init__(
         self,
-        reset: bool = None,
-        radius: float = None,
-        sigma: float = None,
-        roundness: float = None,
-        focal: float = None,
-        pixsize: float = None,
-        convergence: int = None,
+        reset: bool = False,
+        radius: t.Optional[float] = None,
+        sigma: t.Optional[float] = None,
+        roundness: t.Optional[float] = None,
+        focal: t.Optional[float] = None,
+        pixsize: t.Optional[float] = None,
+        convergence: t.Optional[int] = None,
         gaussian: bool = False,
         moffat: bool = False,
         min_beta: float = None,
-        relax: bool = None,
+        relax: t.Optional[bool] = None,
         minA: float = None,
         maxA: float = None,
     ):
         super().__init__()
-        if reset is not None and reset:
+        if reset:
             self.append(CommandArgument("reset"))
         self.append(CommandOption("radius", radius))
         self.append(CommandOption("sigma", sigma))
@@ -4204,9 +4206,9 @@ class setfindstar(BaseCommand):
         self.append(CommandOption("minbeta", min_beta))
         if relax is not None:
             if relax:
-                self.append(CommandOption("relax", "yes"))
+                self.append(CommandOption("relax", "on"))
             else:
-                self.append(CommandOption("relax", "no"))
+                self.append(CommandOption("relax", "off"))
         self.append(CommandOption("minA", minA))
         self.append(CommandOption("maxA", maxA))
 
@@ -4302,11 +4304,10 @@ class spcc(BaseCommand):
     Atmospheric correction can be applied by passing **-atmos**. In this case the following optional arguments apply: **-obsheight=** specifies the observer's height above sea level in metres (default 10), **-pressure=** specifies local atmospheric pressure at the observing site in hPa, or **-slp=** specifies sea-level atmospheric pressure in hPa (default pressure is 1013.25 hPa at sea level)
     """
 
-    # TODO: Review python types
-    # TODO: clean up this command
     def __init__(
         self,
-        limitmag: t.Optional[str] = None,
+        limit_mag: magnitude_option = magnitude_option.DEFAULT_MAGNITUDE,
+        magnitude_value: float = 0.0,
         monosensor: t.Optional[str] = None,
         rfilter: t.Optional[str] = None,
         gfilter: t.Optional[str] = None,
@@ -4315,39 +4316,59 @@ class spcc(BaseCommand):
         oscfilter: t.Optional[str] = None,
         osclpf: t.Optional[str] = None,
         whiteref: t.Optional[str] = None,
-        narrowband: t.Optional[bool] = None,
+        narrowband: bool = False,
         rwl: t.Optional[str] = None,
         gwl: t.Optional[str] = None,
         bwl: t.Optional[str] = None,
         rbw: t.Optional[str] = None,
         gbw: t.Optional[str] = None,
         bbw: t.Optional[str] = None,
-        bgtol: t.Optional[str] = None,
+        bgtol: t.Optional[t.Tuple[float, float]] = None,
         atmos: t.Optional[bool] = None,
         obsheight: t.Optional[int] = None,
         pressure: t.Optional[int] = None,
         slp: t.Optional[int] = None,
     ):
         super().__init__()
-        self.append(CommandOption("limitmag", limitmag))
-        self.append(CommandOption("monosensor", monosensor))
-        self.append(CommandOption("rfilter", rfilter))
-        self.append(CommandOption("gfilter", gfilter))
-        self.append(CommandOption("bfilter", bfilter))
-        self.append(CommandOption("oscsensor", oscsensor))
-        self.append(CommandOption("oscfilter", oscfilter))
-        self.append(CommandOption("osclpf", osclpf))
+        if limit_mag == magnitude_option.MAGNITUDE_OFFSET and magnitude_value != 0.0:
+            if magnitude_value > 0.0:
+                self.append(CommandOption("limitmag", f"+{magnitude_value}"))
+            else:
+                self.append(CommandOption("limitmag", magnitude_value))
+        elif limit_mag == magnitude_option.ABSOLUTE_MAGNITUDE:
+            self.append(CommandOption("limitmag", magnitude_value))
+        
+        if monosensor is not None:
+            self.append(CommandOption("monosensor", monosensor))
+            self.append(CommandOption("rfilter", rfilter))
+            self.append(CommandOption("gfilter", gfilter))
+            self.append(CommandOption("bfilter", bfilter))
+        elif oscsensor is not None:
+            self.append(CommandOption("oscsensor", oscsensor))
+            self.append(CommandOption("oscfilter", oscfilter))
+            self.append(CommandOption("osclpf", osclpf))
+        else:
+            raise ValueError("either monosensor or oscsensor must be provided")
+
         self.append(CommandOption("whiteref", whiteref))
-        self.append(CommandOption("narrowband", narrowband))
-        self.append(CommandOption("rwl", rwl))
-        self.append(CommandOption("gwl", gwl))
-        self.append(CommandOption("bwl", bwl))
-        self.append(CommandOption("rbw", rbw))
-        self.append(CommandOption("gbw", gbw))
-        self.append(CommandOption("bbw", bbw))
-        self.append(CommandOption("bgtol", bgtol))
-        self.append(CommandOption("atmos", atmos))
-        self.append(CommandOption("obsheight", obsheight))
+
+        if narrowband is not None:
+            self.append(CommandFlag("narrowband"))
+            self.append(CommandOption("rwl", rwl))
+            self.append(CommandOption("gwl", gwl))
+            self.append(CommandOption("bwl", bwl))
+            self.append(CommandOption("rbw", rbw))
+            self.append(CommandOption("gbw", gbw))
+            self.append(CommandOption("bbw", bbw))
+
+        self.append(CommandOption("bgtol", f"{bgtol[0]},{bgtol[1]}"))
+
+        if atmos is not None:
+            self.append(CommandOption("atmos", atmos))
+            self.append(CommandOption("obsheight", obsheight))
+        
+        if pressure is not None and slp is not None:
+            raise ValueError("pressure and slp cannot both be provided")
         self.append(CommandOption("pressure", pressure))
         self.append(CommandOption("slp", slp))
 
@@ -4364,10 +4385,9 @@ class spcc_list(BaseCommand):
     Links: :ref:`spcc <spcc>`
     """
 
-    # TODO: make this an enum
-    def __init__(self, list_type: str):
+    def __init__(self, list_type: spcc_list_type):
         super().__init__()
-        self.append(CommandArgument(list_type))
+        self.append(CommandArgument(list_type.value))
 
 
 class split(BaseCommand):
@@ -4379,24 +4399,19 @@ class split(BaseCommand):
     Splits the loaded color image into three distinct files (one for each color) and saves them in **file1**.fit, **file2**.fit and **file3**.fit files. A last argument can optionally be supplied, **-hsl**, **-hsv** or **lab** to perform an HSL, HSV or CieLAB extraction. If no option are provided, the extraction is of RGB type, meaning no conversion is done
     """
 
-    # TODO: make this an enum
     def __init__(
         self,
         file1: str,
         file2: str,
         file3: str,
-        hsl: t.Optional[bool] = None,
-        hsv: t.Optional[bool] = None,
-        lab: t.Optional[bool] = None,
+        method: t.Optional[split_option] = None,
     ):
         super().__init__()
         self.append(CommandArgument(file1))
         self.append(CommandArgument(file2))
         self.append(CommandArgument(file3))
-        # TODO: make this an enum
-        self.append(CommandOption("hsl", hsl))
-        self.append(CommandOption("hsv", hsv))
-        self.append(CommandOption("lab", lab))
+        if method is not None:
+            self.append(CommandFlag(method.value))
 
 
 class split_cfa(BaseCommand):
@@ -4467,7 +4482,6 @@ class stack(BaseCommand):
     It is also possible to use manually selected images, either previously from the GUI or with the select or unselect commands, using the **-filter-included** argument.
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         base_name: str,
@@ -4486,6 +4500,7 @@ class stack(BaseCommand):
         out: t.Optional[str] = None,
     ):
         super().__init__()
+        # TODO: review - this works but is not a complete interface defintion
         self.append(CommandArgument(base_name))
         self.append(CommandArgument(_type))
         if _type == stack_type.STACK_REJ:
@@ -4523,10 +4538,8 @@ class stackall(BaseCommand):
     Links: :ref:`stack <stack>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
-        base_name: str,
         _type: stack_type = stack_type.STACK_REJ,
         norm: stack_norm = stack_norm.NO_NORM,
         rejection: stack_rejection = stack_rejection.REJECTION_WINSORIZED,
@@ -4542,7 +4555,7 @@ class stackall(BaseCommand):
         out: t.Optional[str] = None,
     ):
         super().__init__()
-        self.append(CommandArgument(base_name))
+        # TODO: review - this works but is not a complete interface defintion
         self.append(CommandArgument(_type))
         if _type == stack_type.STACK_REJ:
             # we'll provide all optional arguments for simplicity
@@ -4633,15 +4646,14 @@ class stat(BaseCommand):
     Returns statistics of the current image, the basic list by default or the main list if **main** is passed. If a selection is made, statistics are computed within the selection. If **-cfa** is passed and the image is CFA, statistics are made on per-filter extractions
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         cfa: bool = False,
-        main: bool = False,
+        main: t.Optional[str] = None,
     ):
         super().__init__()
         self.append(CommandFlag("cfa", cfa))
-        self.append(CommandFlag("main", main))
+        self.append(CommandArgument(main))
 
 
 class stop_ls(BaseCommand):
@@ -4668,11 +4680,12 @@ class subsky(BaseCommand):
     For RBF, the additional smoothing parameter is also available. To use pre-existing background samples (e.g. if you have set background samples using a Python script) the **-existing** argument must be used
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         use_rbf: bool = False,
         degree: int = 4,
+        dither: bool = False,
+        existing: bool = False,
         samples: t.Optional[int] = None,
         tolerance: t.Optional[float] = None,
         smooth: t.Optional[float] = None,
@@ -4683,8 +4696,10 @@ class subsky(BaseCommand):
             self.append(CommandOption("smooth", smooth))
         else:
             self.append(CommandArgument(degree))
+        self.append(CommandFlag("dither", dither))
         self.append(CommandOption("samples", samples))
         self.append(CommandOption("tolerance", tolerance))
+        self.append(CommandFlag("existing", existing))
 
 
 class synthstar(BaseCommand):
@@ -4889,11 +4904,10 @@ class wavelet(BaseCommand):
     Links: :ref:`wrecons <wrecons>`, :ref:`extract <extract>`
     """
 
-    # TODO: Review python types
-    def __init__(self, nbr_layers: int, type_: int):
+    def __init__(self, nbr_layers: int, type_: wavelet_type):
         super().__init__()
         self.append(CommandArgument(nbr_layers))
-        self.append(CommandArgument(type_))
+        self.append(CommandArgument(type_.value))
 
 
 class wiener(BaseCommand):
