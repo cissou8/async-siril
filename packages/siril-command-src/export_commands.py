@@ -72,7 +72,7 @@ class ExportSirilCommands:
         log.info("Starting export siril scriptable commands")
 
         # Get the current directory
-        current_dir = pathlib.Path.cwd()
+        current_dir = pathlib.Path(__file__).parent
         log.info(f"current dir: {current_dir}")
 
         # Get the output directory

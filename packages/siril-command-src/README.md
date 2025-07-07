@@ -4,6 +4,11 @@ This tool contains the logic to donwload the Siril documentation and generate th
 
 ## Usage
 
+First navigate to the directory containing the source code.
+```bash
+cd packages/siril-command-src
+```
+
 Generate the command classes first to the generated directory.
 ```bash
 uv run export_commands.py
