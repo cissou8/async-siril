@@ -43,6 +43,9 @@ from .command_types import (
     channel_label,
     star_range,    
     find_star_catalog,
+    drizzle_kernel,
+    psf_method,
+    manual_psf_method,
 )
 
 
@@ -1884,8 +1887,59 @@ class makepsf(BaseCommand):
     Links: :ref:`psf <psf>`, :ref:`rl <rl>`, :ref:`sb <sb>`, :ref:`wiener <wiener>`
     """
 
-    # TODO: Review python types
-    # TODO: Implement makepsf (complicated)
+    def __init__(
+        self,
+        method: psf_method,
+        file_name: t.Optional[str] = None,
+        l0: t.Optional[bool] = None,
+        si: t.Optional[bool] = None,
+        multiscale: t.Optional[bool] = None,
+        lambda_: t.Optional[float] = None,
+        comp: t.Optional[int] = None,
+        ks: t.Optional[int] = None,
+        savepsf: t.Optional[str] = None,
+        sym: t.Optional[bool] = None,
+        manual_psf_method: t.Optional[manual_psf_method] = None,
+        fwhm: t.Optional[float] = None,
+        angle: t.Optional[float] = None,
+        ratio: t.Optional[float] = None,
+        beta: t.Optional[float] = None,
+        dia: t.Optional[float] = None,
+        fl: t.Optional[float] = None,
+        wl: t.Optional[float] = None,
+        pixelsize: t.Optional[float] = None,
+        obstruct: t.Optional[float] = None,        
+    ):
+        super().__init__()
+        self.append(CommandArgument(method))
+
+        if method == psf_method.LOAD or method == psf_method.SAVE:
+            self.append(CommandArgument(file_name))
+        elif method == psf_method.BLIND:
+            self.append(CommandFlag("l0", l0))
+            self.append(CommandFlag("si", si))
+            self.append(CommandFlag("multiscale", multiscale))
+            self.append(CommandOption("lambda", lambda_))
+            self.append(CommandOption("comp", comp))
+            self.append(CommandOption("ks", ks))
+            self.append(CommandOption("savepsf", savepsf))
+        elif method == psf_method.STARS:
+            self.append(CommandFlag("sym", sym))
+            self.append(CommandOption("ks", ks))
+            self.append(CommandOption("savepsf", savepsf))
+        elif method == psf_method.MANUAL:
+            self.append(CommandArgument(manual_psf_method))
+            self.append(CommandOption("fwhm", fwhm))
+            self.append(CommandOption("angle", angle))
+            self.append(CommandOption("ratio", ratio))
+            self.append(CommandOption("beta", beta))
+            self.append(CommandOption("dia", dia))
+            self.append(CommandOption("fl", fl))
+            self.append(CommandOption("wl", wl))
+            self.append(CommandOption("pixelsize", pixelsize))
+            self.append(CommandOption("obstruct", obstruct))
+            self.append(CommandOption("ks", ks))
+            self.append(CommandOption("savepsf", savepsf))
 
 
 class merge(BaseCommand):
@@ -2185,33 +2239,42 @@ class platesolve(BaseCommand):
     Passing options **-blindpos** and/or **-blindres** enables to solve blindly for position and for resolution respectively. You can use these when solving an image with a completely unknown location and sampling
     """
 
-    # TODO: Review python types
-    # TODO: Add support for -order=, -radius=, -disto=, -nocrop, -blindpos, -blindres
-    # TODO: Fix to match original usage
     def __init__(
         self,
         force_plate_solve: bool = False,
         sequence_name: t.Optional[str] = None,
         image_center: t.Optional[str] = None,
-        noflip: bool = False,
-        local_asnet: bool = False,
-        downscale: bool = False,
         focal_length: t.Optional[float] = None,
         pixel_size: t.Optional[float] = None,
+        noflip: bool = False,
+        downscale: bool = False,
+        order: t.Optional[int] = None,
+        radius: t.Optional[float] = None,
+        disto: t.Optional[float] = None,
         limit_mag: magnitude_option = magnitude_option.DEFAULT_MAGNITUDE,
         magnitude_value: float = 0.0,
         catalog: star_catalog = None,
+        nocrop: bool = False,
+        local_asnet: bool = False,
+        blindpos: bool = False,
+        blindres: bool = False,
     ):
         super().__init__()
         if sequence_name is not None:
             self.append(CommandArgument(sequence_name))
+
         self.append(CommandFlag("force", force_plate_solve))
         if image_center is not None:
             self.append(CommandArgument(image_center))
-        self.append(CommandFlag("noflip", noflip))
 
         self.append(CommandOption("focal", focal_length))
         self.append(CommandOption("pixelsize", pixel_size))
+        self.append(CommandFlag("downscale", downscale))
+        self.append(CommandFlag("noflip", noflip))
+        self.append(CommandOption("order", order))
+        self.append(CommandOption("radius", radius))
+        self.append(CommandOption("disto", disto))
+        
         if limit_mag == magnitude_option.MAGNITUDE_OFFSET and magnitude_value != 0.0:
             if magnitude_value > 0.0:
                 self.append(CommandOption("limitmag", f"+{magnitude_value}"))
@@ -2221,9 +2284,14 @@ class platesolve(BaseCommand):
             self.append(CommandOption("limitmag", magnitude_value))
         if local_asnet and catalog is not None:
             raise ValueError("catalog cannot be changed when using astrometry.net")
+        
         self.append(CommandOption("catalog", catalog))
-        self.append(CommandFlag("localasnet", local_asnet))
-        self.append(CommandFlag("downscale", downscale))
+        self.append(CommandFlag("nocrop", nocrop))
+
+        if local_asnet:
+            self.append(CommandFlag("localasnet", local_asnet))
+            self.append(CommandFlag("blindpos", blindpos))
+            self.append(CommandFlag("blindres", blindres))
 
 
 class pm(BaseCommand):
@@ -2400,35 +2468,50 @@ class register(BaseCommand):
     Links: :ref:`setfindstar <setfindstar>`, :ref:`psf <psf>`, :ref:`seqapplyreg <seqapplyreg>`
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         base_name: str,
-        no_out: bool = False,
         two_pass: bool = False,
-        drizzle: bool = False,
         selected: bool = False,
         prefix: t.Optional[str] = None,
-        min_pairs: t.Optional[int] = None,
-        trans_func: t.Optional[registration_transformation] = None,
+        scale: t.Optional[float] = None,
         layer: t.Optional[int] = None,
+        trans_func: t.Optional[registration_transformation] = None,
+        min_pairs: t.Optional[int] = None,
         max_stars: t.Optional[int] = None,
+        no_starlist: bool = False,
+        disto: t.Optional[str] = None,
         interp: t.Optional[pixel_interpolation] = None,
+        noclamp: bool = False,
+        drizzle: bool = False,
+        pixfrac: t.Optional[float] = None,
+        kernel: t.Optional[str] = None,
+        flat: t.Optional[str] = None,
     ):
         super().__init__()
-        # TODO: Clean up to match usage
         self.append(CommandArgument(base_name))
-        self.append(CommandFlag("noout", no_out))
         self.append(CommandFlag("2pass", two_pass))
-        self.append(CommandFlag("drizzle", drizzle))
         self.append(CommandFlag("selected", selected))
+        self.append(CommandOption("prefix", prefix))
+        self.append(CommandOption("scale", scale))
+
         self.append(CommandOption("layer", layer))
+        self.append(CommandOption("transf", trans_func))
         self.append(CommandOption("minpairs", min_pairs))
         self.append(CommandOption("maxstars", max_stars))
-        self.append(CommandOption("transf", trans_func))
-        if not no_out and not two_pass:
+        self.append(CommandFlag("nostarlist", no_starlist))
+        self.append(CommandOption("disto", disto))
+        
+        if not two_pass:
             self.append(CommandOption("interp", interp))
-            self.append(CommandOption("prefix", prefix))
+
+        self.append(CommandFlag("noclamp", noclamp))
+
+        if drizzle:
+            self.append(CommandFlag("drizzle", drizzle))
+            self.append(CommandOption("pixfrac", pixfrac))
+            self.append(CommandOption("kernel", kernel))
+            self.append(CommandOption("flat", flat))
 
 
 class requires(BaseCommand):
@@ -2930,29 +3013,39 @@ class seqapplyreg(BaseCommand):
     It is also possible to use manually selected images, either previously from the GUI or with the select or unselect commands, using the **-filter-included** argument.
     """
 
-    # TODO: Review python types
     def __init__(
         self,
         base_name: str,
-        drizzle: bool = False,
-        layer: t.Optional[int] = None,
         prefix: t.Optional[str] = None,
-        interp: t.Optional[pixel_interpolation] = None,
-        filters: t.Optional[t.List[sequence_filter_with_value]] = None,
-        filter_included: bool = False,
+        scale: t.Optional[float] = None,
+        layer: t.Optional[int] = None,
         framing: t.Optional[sequence_framing] = None,
+        interp: t.Optional[pixel_interpolation] = None,
+        noclamp: bool = False,
+        drizzle: bool = False,
+        pixfrac: t.Optional[float] = None,
+        kernel: t.Optional[drizzle_kernel] = None,
+        flat: t.Optional[str] = None,
+        filters: t.Optional[t.List[sequence_filter_with_value]] = None,
     ):
         super().__init__()
         self.append(CommandArgument(base_name))
-        self.append(CommandFlag("drizzle", drizzle))
-        self.append(CommandOption("layer", layer))
         self.append(CommandOption("prefix", prefix))
-        self.append(CommandOption("interp", interp))
+        self.append(CommandOption("scale", scale))
+        self.append(CommandOption("layer", layer))
         self.append(CommandOption("framing", framing))
+        self.append(CommandOption("interp", interp))
+        self.append(CommandFlag("noclamp", noclamp))
+        
+        if drizzle:
+            self.append(CommandFlag("drizzle", drizzle))
+            self.append(CommandOption("pixfrac", pixfrac))
+            self.append(CommandOption("kernel", kernel))
+            self.append(CommandOption("flat", flat))
+        
         if filters is not None:
             for f in filters:
                 self.append(CommandOption(f.filter_type.value, f.value_str()))
-        self.append(CommandFlag("filter-incl", filter_included))
 
 
 class seqccm(BaseCommand):
@@ -3679,30 +3772,41 @@ class seqplatesolve(BaseCommand):
     Passing options **-blindpos** and/or **-blindres** enables to solve blindly for position and for resolution respectively. You can use these when solving an image with a completely unknown location and sampling
     """
 
-    # TODO: Review python types
-    # TODO: implement all options
     def __init__(
         self,
-        sequence: str,
+        sequence_name: str,
         image_center: t.Optional[str] = None,
-        noflip: bool = False,
-        force_plate_solve: bool = False,
-        local_asnet: bool = False,
-        downscale: bool = False,
         focal_length: t.Optional[float] = None,
         pixel_size: t.Optional[float] = None,
+        downscale: bool = False,
+        order: t.Optional[int] = None,
+        radius: t.Optional[float] = None,
+        force_plate_solve: bool = False,
+        noreg: bool = False,
+        disto: t.Optional[float] = None,
         limit_mag: magnitude_option = magnitude_option.DEFAULT_MAGNITUDE,
         magnitude_value: float = 0.0,
         catalog: star_catalog = None,
+        nocrop: bool = False,
+        nocache: bool = False,
+        local_asnet: bool = False,
+        blindpos: bool = False,
+        blindres: bool = False,
     ):
         super().__init__()
-        self.append(CommandArgument(sequence))
-        self.append(CommandArgument(image_center))
+        self.append(CommandArgument(sequence_name))
+
+        if image_center is not None:
+            self.append(CommandArgument(image_center))
+
         self.append(CommandOption("focal", focal_length))
         self.append(CommandOption("pixelsize", pixel_size))
-
-        self.append(CommandFlag("noflip", noflip))
-        self.append(CommandFlag("platesolve", force_plate_solve))
+        self.append(CommandFlag("downscale", downscale))
+        self.append(CommandOption("order", order))
+        self.append(CommandOption("radius", radius))
+        self.append(CommandFlag("force", force_plate_solve))
+        self.append(CommandFlag("noreg", noreg))
+        self.append(CommandOption("disto", disto))
         
         if limit_mag == magnitude_option.MAGNITUDE_OFFSET and magnitude_value != 0.0:
             if magnitude_value > 0.0:
@@ -3713,9 +3817,15 @@ class seqplatesolve(BaseCommand):
             self.append(CommandOption("limitmag", magnitude_value))
         if local_asnet and catalog is not None:
             raise ValueError("catalog cannot be changed when using astrometry.net")
+        
         self.append(CommandOption("catalog", catalog))
-        self.append(CommandFlag("localasnet", local_asnet))
-        self.append(CommandFlag("downscale", downscale))
+        self.append(CommandFlag("nocrop", nocrop))
+        self.append(CommandFlag("nocache", nocache))
+
+        if local_asnet:
+            self.append(CommandFlag("localasnet", local_asnet))
+            self.append(CommandFlag("blindpos", blindpos))
+            self.append(CommandFlag("blindres", blindres))
 
 
 class seqresample(BaseCommand):

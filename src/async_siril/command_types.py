@@ -271,3 +271,17 @@ class stat_detail(Enum):
     BASIC = "basic"
     MAIN = "main"
     FULL = "full"
+
+class psf_method(Enum):
+    CLEAR = "clear"
+    LOAD = "load"
+    SAVE = "save"
+    BLIND = "blind"
+    STARS = "stars"
+    MANUAL = "manual"
+
+class manual_psf_method(Enum):
+    GAUSSIAN = "gaussian"
+    MOFFAT = "moffat"
+    DISC = "disc"
+    AIRY = "airy"
