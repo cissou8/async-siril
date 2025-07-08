@@ -10,13 +10,14 @@ Python async wrapper around Siril astrophotography software.
 * [x] automated command coverage checking
 * [x] review all python commands and their types (see "TODO:")
 * [x] pytest setup for common commands
+* [x] updated examples with how to
+* [x] make flats cli example
 * [ ] logging cleanup and namespaces
 * [ ] updated readme with how to
-* [ ] updated examples with how to
-* [ ] make flats cli example
 * [ ] make linear stack cli example
+* [ ] make rgb cli example
 * [ ] native ui example
-* [ ] 
+
 
 * [ ] developer docs
 * [ ] publish step to PyPI
