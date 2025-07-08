@@ -8,7 +8,8 @@ Python async wrapper around Siril astrophotography software.
 * [x] async examples with cappa
 * [x] full on command listing
 * [x] automated command coverage checking
-* [ ] review all python commands and their types (see "# TODO:")
+* [x] review all python commands and their types (see "TODO:")
+* [x] pytest setup for common commands
 * [ ] logging cleanup and namespaces
 * [ ] updated readme with how to
 * [ ] updated examples with how to

@@ -24,7 +24,6 @@ from .command_types import (
     star_catalog,
     rmgreen_protection,
     magnitude_option,
-    sequence_filter_with_value,
     Rect,
     clipmode,
     ght_weighting,
@@ -46,6 +45,7 @@ from .command_types import (
     drizzle_kernel,
     psf_method,
     manual_psf_method,
+    sequence_filter_type,
 )
 
 
@@ -139,6 +139,30 @@ class BaseCommand:
             self.args.append(str(_input))
 
 
+class SequenceFilter:
+    def __init__(
+        self,
+        _type: sequence_filter_type,
+        value: t.Optional[float] = None,
+        percent: t.Optional[float] = None,
+    ):
+        self.filter_type = _type
+        if _type != sequence_filter_type.FILTER_INCLUSION:
+            if (value is None and percent is None) or (value is not None and percent is not None):
+                raise ValueError("A filter must either have a value or percent argument")
+        self.value = value
+        self.percent = percent
+    
+    def filter_parameter(self) -> t.Union[CommandOption, CommandFlag]:
+        if self.filter_type == sequence_filter_type.FILTER_INCLUSION:
+            return CommandFlag(self.filter_type.value, True)
+        
+        if self.value is not None:
+            return CommandOption(self.filter_type.value, str(self.value))
+        
+        return CommandOption(self.filter_type.value, f"{self.percent}%")
+
+
 ####################################################
 # Siril CLI Commands
 ####################################################
@@ -157,15 +181,14 @@ class asinh(BaseCommand):
         self,
         stretch: float,
         human_weighting: bool = False,
-        offset: t.Optional[t.tuple[int, int]] = None,
+        offset: t.Optional[float] = None,
         clipmode: t.Optional[clipmode] = None,
     ):
         super().__init__()
         self.append(CommandFlag("human", human_weighting))
         self.append(CommandArgument(stretch))
         if offset is not None:
-            # TODO: review - is this right on how to represent the offset?
-            self.append(CommandArgument(f"[{offset[0]},{offset[1]}]"))
+            self.append(CommandArgument(offset))
         self.append(CommandOption("clipmode", clipmode))
 
 
@@ -2205,7 +2228,8 @@ class pcc(BaseCommand):
         elif limit_mag == magnitude_option.ABSOLUTE_MAGNITUDE:
             self.append(CommandOption("limitmag", magnitude_value))
         self.append(CommandOption("catalog", catalog))
-        self.append(CommandOption("bgtol", f"{bgtol[0]},{bgtol[1]}"))
+        if bgtol is not None:
+            self.append(CommandOption("bgtol", f"{bgtol[0]},{bgtol[1]}"))
 
 
 class platesolve(BaseCommand):
@@ -3026,7 +3050,7 @@ class seqapplyreg(BaseCommand):
         pixfrac: t.Optional[float] = None,
         kernel: t.Optional[drizzle_kernel] = None,
         flat: t.Optional[str] = None,
-        filters: t.Optional[t.List[sequence_filter_with_value]] = None,
+        filters: t.Optional[t.List[SequenceFilter]] = None,
     ):
         super().__init__()
         self.append(CommandArgument(base_name))
@@ -3045,7 +3069,7 @@ class seqapplyreg(BaseCommand):
         
         if filters is not None:
             for f in filters:
-                self.append(CommandOption(f.filter_type.value, f.value_str()))
+                self.append(f.filter_parameter())
 
 
 class seqccm(BaseCommand):
@@ -3693,13 +3717,15 @@ class seqprofile(BaseCommand):
                 self.append(CommandOption("wavenumber1", wave_number_1))
             elif wave_length_1 is not None:
                 self.append(CommandOption("wavelength1", wave_length_1))
-            self.append(CommandOption("wn1at", f"{wn1at[0]},{wn1at[1]}"))
+            if wn1at is not None:
+                self.append(CommandOption("wn1at", f"{wn1at[0]},{wn1at[1]}"))
             
             if wave_number_2 is not None:
                 self.append(CommandOption("wavenumber2", wave_number_2))
             elif wave_length_2 is not None:
                 self.append(CommandOption("wavelength2", wave_length_2))
-            self.append(CommandOption("wn2at", f"{wn2at[0]},{wn2at[1]}"))
+            if wn2at is not None:
+                self.append(CommandOption("wn2at", f"{wn2at[0]},{wn2at[1]}"))
 
         self.append(CommandOption("title", title))
 
@@ -4026,7 +4052,7 @@ class seqsubsky(BaseCommand):
         self,
         sequence: str,
         use_rbf: bool = False,
-        degree: int = 4,
+        degree: int = 1,
         dither: bool = False,
         existing: bool = False,
         samples: t.Optional[int] = None,
@@ -4146,13 +4172,16 @@ class set(BaseCommand):
     def __init__(
         self,
         import_file: t.Optional[str] = None,
-        variable_value: t.Optional[t.Tuple[str, str]] = None,
+        key: t.Optional[str] = None,
+        value: t.Optional[str] = None,
     ):
         super().__init__()
         if import_file is not None:
             self.append(CommandOption("import", import_file))
-        if variable_value is not None:
-            self.append(CommandArgument(f"{variable_value[0]}={variable_value[1]}"))
+        if key is not None and value is not None:
+            self.append(CommandArgument(f"{key}={value}"))
+        else:
+            raise ValueError("key and value must be provided")
 
 
 class set16bits(BaseCommand):
@@ -4471,7 +4500,8 @@ class spcc(BaseCommand):
             self.append(CommandOption("gbw", gbw))
             self.append(CommandOption("bbw", bbw))
 
-        self.append(CommandOption("bgtol", f"{bgtol[0]},{bgtol[1]}"))
+        if bgtol is not None:
+            self.append(CommandOption("bgtol", f"{bgtol[0]},{bgtol[1]}"))
 
         if atmos is not None:
             self.append(CommandOption("atmos", atmos))
@@ -4601,7 +4631,7 @@ class stack(BaseCommand):
         lower_rej: float = 3,
         higher_rej: float = 3,
         create_rejection_maps: stack_rejmaps = stack_rejmaps.NO_REJECTION_MAPS,
-        filters: t.Optional[t.List[sequence_filter_with_value]] = None,
+        filters: t.Optional[t.List[SequenceFilter]] = None,
         filter_included: bool = False,
         fast_norm: bool = False,
         output_norm: bool = False,
@@ -4624,7 +4654,7 @@ class stack(BaseCommand):
         self.append(CommandArgument(norm))
         if filters is not None:
             for f in filters:
-                self.append(CommandOption(f.filter_type.value, f.value_str()))
+                self.append(f.filter_parameter())
         self.append(CommandFlag("filter-incl", filter_included))
         self.append(CommandFlag("fastnorm", fast_norm))
         self.append(CommandFlag("output_norm", output_norm))
@@ -4656,7 +4686,7 @@ class stackall(BaseCommand):
         lower_rej: float = 3,
         higher_rej: float = 3,
         create_rejection_maps: stack_rejmaps = stack_rejmaps.NO_REJECTION_MAPS,
-        filters: t.Optional[t.List[sequence_filter_with_value]] = None,
+        filters: t.Optional[t.List[SequenceFilter]] = None,
         filter_included: bool = False,
         fast_norm: bool = False,
         output_norm: bool = False,
@@ -4678,7 +4708,7 @@ class stackall(BaseCommand):
         self.append(CommandArgument(norm))
         if filters is not None:
             for f in filters:
-                self.append(CommandOption(f.filter_type.value, f.value_str()))
+                self.append(f.filter_parameter())
         self.append(CommandFlag("filter-incl", filter_included))
         self.append(CommandFlag("fastnorm", fast_norm))
         self.append(CommandFlag("output_norm", output_norm))

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import typing as t
-
 from enum import Enum
 from dataclasses import dataclass
 
@@ -22,25 +20,6 @@ class SigmaRange:
 
     def __str__(self):
         return f"{self.low} {self.high}"
-
-
-class sequence_filter_with_value:
-    def __init__(
-        self,
-        _type: sequence_filter_type,
-        value: t.Optional[float] = None,
-        percent: t.Optional[float] = None,
-    ):
-        self.filter_type = _type
-        if (value is None and percent is None) or (value is not None and percent is not None):
-            raise ValueError("A filter must either have a value or percent argument")
-        self.value = value
-        self.percent = percent
-
-    def value_str(self):
-        if self.value is not None:
-            return str(self.value)
-        return f"{self.percent}%"
 
 
 class clipmode(Enum):
@@ -155,6 +134,8 @@ class star_catalog(Enum):
 class rmgreen_protection(Enum):
     AVERAGE_NEUTRAL = 0
     MAXIMUM_NEUTRAL = 1
+    MAXIMUM_MASK = 2
+    ADDITIVE_MASK = 3
 
 
 class saturation_hue_range(Enum):
@@ -251,6 +232,14 @@ class graxpert_kernel(Enum):
     QUINTIC = "quintic"
     CUBIC = "cubic"
     LINEAR = "linear"
+
+class drizzle_kernel(Enum):
+    POINT = "point"
+    TURBO = "turbo"
+    SQUARE = "square"
+    GAUSSIAN = "gaussian"
+    LANCZOS2 = "lanczos2"
+    LANCZOS3 = "lanczos3"
 
 class split_option(Enum):
     HSL = "hsl"
