@@ -43,16 +43,16 @@ class SirilEvent:
 
     def _parse_status_output(self):
         matches = re.search(r"status\:\s(\S*)\s(.*)", self._raw_string)
-        self.status = matches.group(1)
-        self.message = matches.group(2)
+        self.status = matches.group(1) if matches and matches.group(1) else None
+        self.message = matches.group(2) if matches and matches.group(2) else None
 
     def _parse_log_output(self):
         matches = re.search(r"log\:\s(.*)", self._raw_string)
-        self.message = matches.group(1)
+        self.message = matches.group(1) if matches and matches.group(1) else None
 
     def _parse_progress_output(self):
         matches = re.search(r"progress\:\s(\d*)", self._raw_string)
-        self.progress = int(matches.group(1))
+        self.progress = int(matches.group(1)) if matches and matches.group(1) else None
 
     def _parse_ready_output(self):
         self.status = self._raw_string

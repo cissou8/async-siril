@@ -3,6 +3,8 @@ test:
 
 check:
 	uv run ruff check
+	@echo ""
+	uv run ty check --output-format concise
 
 format:
 	uv run ruff format

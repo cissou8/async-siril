@@ -25,6 +25,7 @@ dev = [
     "pytest>=8.4.1",
     "ruff>=0.12.2",
     "streamlit>=1.46.1",
+    "ty>=0.0.1a14",
 ]
 
 [tool.uv.workspace]
@@ -36,3 +37,8 @@ members = [
 # Allow lines to be as long as 120.
 line-length = 120
 extend-exclude = ["**/generated/*"]
+
+[tool.ty.src]
+exclude = [
+    "**/generated/*",
+]

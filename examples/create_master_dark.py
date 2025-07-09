@@ -9,7 +9,7 @@ import tempfile
 import typing as t
 
 from async_siril.siril import SirilCli
-from async_siril.command import setext, set32bits, cd, convert, stack, preprocess
+from async_siril.command import setext, set32bits, cd, convert, stack, calibrate
 from async_siril.command import fits_extension
 
 log = structlog.stdlib.get_logger()
@@ -54,7 +54,7 @@ class CreateMasterDark:
                     # This is really geared towards the DSLR users
                     # produces: calibrated-master-dark
                     # Dark Optimization: used to identify the thermal noise in non-temp controlled cameras (dslr)
-                    await siril.command(preprocess(self.name, bias=f"{str(self.bias.relative_to(temp))}"))
+                    await siril.command(calibrate(self.name, bias=f"{str(self.bias.relative_to(temp))}"))
                     await siril.command(stack(f"pp_{self.name}", out=out))
                 else:
                     await siril.command(stack(self.name, out=out))

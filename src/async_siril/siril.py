@@ -1,4 +1,5 @@
 import asyncio
+import asyncio.subprocess
 import structlog.stdlib
 import os
 import platform

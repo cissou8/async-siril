@@ -19,10 +19,10 @@ log = structlog.stdlib.get_logger()
 
 @a.define(kw_only=True, frozen=True)
 class CalibrateLight:
-    raw_folder: t.Annotated[pathlib.Path, cappa.Arg(help="Path to the raw folder of Bias frames")]
+    raw_folder: t.Annotated[pathlib.Path, cappa.Arg(help="Path to the raw folder of Light frames")]
     output: t.Annotated[pathlib.Path, cappa.Arg(help="Path to the output folder")]
     ext: t.Annotated[
-        fits_extension, cappa.Arg(short=True, default=fits_extension.FITS_EXT_FIT, help="Extension of the Bias frames")
+        fits_extension, cappa.Arg(short=True, default=fits_extension.FITS_EXT_FIT, help="Extension of the Light frames")
     ]
 
     dark: t.Annotated[t.Optional[pathlib.Path], cappa.Arg(short=True, help="Path to the master dark")]

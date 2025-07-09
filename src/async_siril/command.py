@@ -72,9 +72,9 @@ class CommandArgument:
 
 
 class CommandFlag:
-    def __init__(self, name: str, value: bool):
+    def __init__(self, name: str, value: t.Optional[bool] = True):
         self.name = name
-        self.value = value
+        self.value = value if value is not None else False
 
     @property
     def valid(self) -> bool:
@@ -1113,7 +1113,9 @@ class findcompstars(BaseCommand):
         self.append(CommandArgument(star_name))
         if star_range is not None:
             self.append(CommandFlag(star_range.value))
-        self.append(CommandOption("catalog", catalog.value))
+        if catalog is not None and catalog.value is not None:
+            self.append(CommandOption("catalog", catalog.value))
+        
         self.append(CommandOption("dvmag", dvmag))
         self.append(CommandOption("dbv", dbv))
         self.append(CommandOption("emag", emag))
@@ -1329,7 +1331,7 @@ class ght(BaseCommand):
         self.append(CommandOption("HP", HP))
         self.append(CommandOption("clipmode", clipmode))
         if weight is not None:
-            self.append(CommandFlag(weight))
+            self.append(CommandFlag(weight.value))
         self.append(CommandArgument(channels))
 
 
@@ -1383,7 +1385,7 @@ class graxpert_bg(BaseCommand):
         self.append(CommandOption("smoothing", smoothing))
         self.append(CommandOption("bgtol", bgtol))
         if compute is not None:
-            self.append(CommandFlag(compute))
+            self.append(CommandFlag(compute.value))
             if ai_version is not None:
                 self.append(CommandOption("ai_version", ai_version))
         self.append(CommandFlag("keep_bg", keep_bg))
@@ -1413,7 +1415,7 @@ class graxpert_denoise(BaseCommand):
         super().__init__()
         self.append(CommandOption("strength", strength))
         if compute is not None:
-            self.append(CommandFlag(compute))
+            self.append(CommandFlag(compute.value))
             if ai_version is not None:
                 self.append(CommandOption("ai_version", ai_version))
 
@@ -1582,7 +1584,7 @@ class invght(BaseCommand):
         self.append(CommandOption("HP", HP))
         self.append(CommandOption("clipmode", clipmode))
         if weight is not None:
-            self.append(CommandFlag(weight))
+            self.append(CommandFlag(weight.value))
         if channels is not None:
             self.append(CommandArgument(channels))
 
@@ -1615,7 +1617,7 @@ class invmodasinh(BaseCommand):
         self.append(CommandOption("HP", HP))
         self.append(CommandOption("clipmode", clipmode))
         if weight is not None:
-            self.append(CommandFlag(weight))
+            self.append(CommandFlag(weight.value))
         if channels is not None:
             self.append(CommandArgument(channels))
 
@@ -1681,7 +1683,8 @@ class jsonmetadata(BaseCommand):
     ):
         super().__init__()
         self.append(CommandArgument(FITS_file))
-        self.append(CommandFlag("stats_from_loaded", stats_from_loaded))
+        if stats_from_loaded is not None:
+            self.append(CommandFlag("stats_from_loaded", stats_from_loaded))
         self.append(CommandFlag("nostats", nostats))
         self.append(CommandOption("out", out))
 
@@ -2088,7 +2091,7 @@ class modasinh(BaseCommand):
         self.append(CommandOption("HP", HP))
         self.append(CommandOption("clipmode", clipmode))
         if weight is not None:
-            self.append(CommandFlag(weight))
+            self.append(CommandFlag(weight.value))
         self.append(CommandArgument(channels))
 
 
@@ -2277,7 +2280,7 @@ class platesolve(BaseCommand):
         disto: t.Optional[float] = None,
         limit_mag: magnitude_option = magnitude_option.DEFAULT_MAGNITUDE,
         magnitude_value: float = 0.0,
-        catalog: star_catalog = None,
+        catalog: t.Optional[star_catalog] = None,
         nocrop: bool = False,
         local_asnet: bool = False,
         blindpos: bool = False,
@@ -3488,7 +3491,7 @@ class seqinvght(BaseCommand):
         if clipmode is not None:
             self.append(CommandOption("clipmode", clipmode))
         if weight is not None:
-            self.append(CommandOption(weight.value))
+            self.append(CommandFlag(weight.value))
         self.append(CommandArgument(channels))
         self.append(CommandOption("prefix", prefix))
 
@@ -3527,7 +3530,7 @@ class seqinvmodasinh(BaseCommand):
         if clipmode is not None:
             self.append(CommandOption("clipmode", clipmode))
         if weight is not None:
-            self.append(CommandOption(weight.value))
+            self.append(CommandFlag(weight.value))
         self.append(CommandArgument(channels))
         self.append(CommandOption("prefix", prefix))
 
@@ -3626,7 +3629,7 @@ class seqmodasinh(BaseCommand):
         if clipmode is not None:
             self.append(CommandOption("clipmode", clipmode))
         if weight is not None:
-            self.append(CommandOption(weight.value))
+            self.append(CommandFlag(weight.value))
         self.append(CommandArgument(channels))
         self.append(CommandOption("prefix", prefix))
 
@@ -3812,7 +3815,7 @@ class seqplatesolve(BaseCommand):
         disto: t.Optional[float] = None,
         limit_mag: magnitude_option = magnitude_option.DEFAULT_MAGNITUDE,
         magnitude_value: float = 0.0,
-        catalog: star_catalog = None,
+        catalog: t.Optional[star_catalog] = None,
         nocrop: bool = False,
         nocache: bool = False,
         local_asnet: bool = False,
@@ -4318,10 +4321,10 @@ class setfindstar(BaseCommand):
         convergence: t.Optional[int] = None,
         gaussian: bool = False,
         moffat: bool = False,
-        min_beta: float = None,
+        min_beta: t.Optional[float] = None,
         relax: t.Optional[bool] = None,
-        minA: float = None,
-        maxA: float = None,
+        minA: t.Optional[float] = None,
+        maxA: t.Optional[float] = None,
     ):
         super().__init__()
         if reset:
