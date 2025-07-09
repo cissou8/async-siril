@@ -13,7 +13,7 @@ Python async wrapper around Siril astrophotography software.
 * [x] make flats cli example
 * [x] add type check with `ty` tool
 * [x] make linear stack cli example
-* [ ] logging cleanup and namespaces
+* [x] logging cleanup and namespaces
 * [ ] updated readme with how to
 * [ ] make rgb cli example
 

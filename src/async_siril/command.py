@@ -49,7 +49,7 @@ from .command_types import (
 )
 
 
-logger = structlog.stdlib.get_logger()
+logger = structlog.stdlib.get_logger("async_siril")
 
 
 class CommandArgument:

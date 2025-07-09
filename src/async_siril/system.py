@@ -5,7 +5,7 @@ import psutil
 import typing as t
 from psutil._common import bytes2human
 
-logger = structlog.stdlib.get_logger()
+logger = structlog.stdlib.get_logger("async_siril.system")
 
 
 def human_readable_byte_size(num):
@@ -56,7 +56,7 @@ def container_aware_memory_limit_gb() -> t.Optional[str]:
     for _file in memory_limit_paths:
         raw_result = read_int(_file)
         if raw_result is not None and raw_result > 0:
-            logger.info(f"found non-zero value in: {_file} - {raw_result}")
+            logger.debug(f"found non-zero value in: {_file} - {raw_result}")
             gb_value = raw_result / 1024 / 1024 / 1024
             return "{:.2f}".format(gb_value)
     return None

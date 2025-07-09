@@ -4,7 +4,7 @@ import typing as t
 import os
 import re
 
-logger = structlog.stdlib.get_logger()
+logger = structlog.stdlib.get_logger("async_siril")
 
 # Custom pipes for Siril CLI communications
 custom_read_pipe_name = "/tmp/async_siril_command.out"

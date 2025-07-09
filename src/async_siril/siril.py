@@ -11,7 +11,7 @@ from .event import AsyncSirilEventConsumer, AsyncSirilCommandProducer
 from .system import container_aware_cpu_limit, container_aware_memory_limit_gb
 from pathlib import Path
 
-logger = structlog.stdlib.get_logger()
+logger = structlog.stdlib.get_logger("async_siril")
 container_aware_limits = False
 
 
@@ -37,6 +37,7 @@ class SirilCli(object):
     ):
         self._siril_exe = self._find_siril_cli(siril_exe)
         logger.info("Found Siril CLI executable: %s", self._siril_exe)
+
         self._cwd = directory
         self._cpu_limit = container_aware_cpu_limit() if container_aware_limits else cpu_limit
         self._memory_limit = container_aware_memory_limit_gb() if container_aware_limits else memory_limit
@@ -53,16 +54,16 @@ class SirilCli(object):
         logger.info("Found %s version: %s", self._siril_exe, self.version)
 
     async def _start(self):
+        logger.debug("Initializing Siril CLI with Async Consumer & Producer")
         self._consumer.start()
         self._producer.start()
 
-        logger.info("Initializing Siril CLI with Async Processor")
         params = ["--pipe", "--inpipe", self._producer.fifo_path, "--outpipe", self._consumer.fifo_path]
         if self._cwd is not None:
             params.insert(0, "-d")
             params.insert(1, str(self._cwd))
 
-        logger.info("Siril params: %s", params)
+        logger.info("Starting Siril CLI with params: %s", params)
         self._process = await asyncio.create_subprocess_exec(
             self._siril_exe,
             *params,
@@ -79,7 +80,7 @@ class SirilCli(object):
 
         # Start reading and become ready when the CLI says so
         await self._consumer.siril_ready
-        logger.info("Siril CLI has become ready")
+        logger.info("Siril CLI is now ready for startup commands")
 
         # Call this command as the first thing we do for all sessions
         from .command import requires
@@ -94,10 +95,10 @@ class SirilCli(object):
 
         await self.command(setmem(0.9))
         await self.command(capabilities())
-        logger.info("SirilCli is ready for commands")
+        logger.info("AsyncSiril is ready for additional commands")
 
     async def _stop(self):
-        logger.info("Stopping SirilCli process")
+        logger.info("Stopping AsyncSiril process")
         try:
             self._consumer.stop()
             self._producer.stop()

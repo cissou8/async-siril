@@ -2,12 +2,9 @@ from __future__ import annotations
 
 import pathlib
 import typing as t
-import structlog.stdlib
 
 from dataclasses import dataclass
 from async_siril.command_types import stack_rejection
-
-log = structlog.stdlib.get_logger()
 
 
 @dataclass

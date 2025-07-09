@@ -1,10 +1,8 @@
 import re
 import pathlib
 import typing as t
-import structlog.stdlib
-from dataclasses import dataclass
 
-log = structlog.stdlib.get_logger()
+from dataclasses import dataclass
 
 
 @dataclass
