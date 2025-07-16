@@ -40,7 +40,7 @@ from .command_types import (
     graxpert_mode,
     wavelet_type,
     channel_label,
-    star_range,    
+    star_range,
     find_star_catalog,
     drizzle_kernel,
     psf_method,
@@ -152,14 +152,14 @@ class SequenceFilter:
                 raise ValueError("A filter must either have a value or percent argument")
         self.value = value
         self.percent = percent
-    
+
     def filter_parameter(self) -> t.Union[CommandOption, CommandFlag]:
         if self.filter_type == sequence_filter_type.FILTER_INCLUSION:
             return CommandFlag(self.filter_type.value, True)
-        
+
         if self.value is not None:
             return CommandOption(self.filter_type.value, str(self.value))
-        
+
         return CommandOption(self.filter_type.value, f"{self.percent}%")
 
 
@@ -1115,7 +1115,7 @@ class findcompstars(BaseCommand):
             self.append(CommandFlag(star_range.value))
         if catalog is not None and catalog.value is not None:
             self.append(CommandOption("catalog", catalog.value))
-        
+
         self.append(CommandOption("dvmag", dvmag))
         self.append(CommandOption("dbv", dbv))
         self.append(CommandOption("emag", emag))
@@ -1934,7 +1934,7 @@ class makepsf(BaseCommand):
         fl: t.Optional[float] = None,
         wl: t.Optional[float] = None,
         pixelsize: t.Optional[float] = None,
-        obstruct: t.Optional[float] = None,        
+        obstruct: t.Optional[float] = None,
     ):
         super().__init__()
         self.append(CommandArgument(method))
@@ -2301,7 +2301,7 @@ class platesolve(BaseCommand):
         self.append(CommandOption("order", order))
         self.append(CommandOption("radius", radius))
         self.append(CommandOption("disto", disto))
-        
+
         if limit_mag == magnitude_option.MAGNITUDE_OFFSET and magnitude_value != 0.0:
             if magnitude_value > 0.0:
                 self.append(CommandOption("limitmag", f"+{magnitude_value}"))
@@ -2311,7 +2311,7 @@ class platesolve(BaseCommand):
             self.append(CommandOption("limitmag", magnitude_value))
         if local_asnet and catalog is not None:
             raise ValueError("catalog cannot be changed when using astrometry.net")
-        
+
         self.append(CommandOption("catalog", catalog))
         self.append(CommandFlag("nocrop", nocrop))
 
@@ -2528,7 +2528,7 @@ class register(BaseCommand):
         self.append(CommandOption("maxstars", max_stars))
         self.append(CommandFlag("nostarlist", no_starlist))
         self.append(CommandOption("disto", disto))
-        
+
         if not two_pass:
             self.append(CommandOption("interp", interp))
 
@@ -3063,13 +3063,13 @@ class seqapplyreg(BaseCommand):
         self.append(CommandOption("framing", framing))
         self.append(CommandOption("interp", interp))
         self.append(CommandFlag("noclamp", noclamp))
-        
+
         if drizzle:
             self.append(CommandFlag("drizzle", drizzle))
             self.append(CommandOption("pixfrac", pixfrac))
             self.append(CommandOption("kernel", kernel))
             self.append(CommandOption("flat", flat))
-        
+
         if filters is not None:
             for f in filters:
                 self.append(f.filter_parameter())
@@ -3105,7 +3105,9 @@ class seqclean(BaseCommand):
     You can specify to clear only registration, statistics and/or selection with **-reg**, **-stat** and **-sel** options respectively. All are cleared if no option is passed
     """
 
-    def __init__(self, sequencename: str, registration: bool = False, statistics: bool = False, selection: bool = False):
+    def __init__(
+        self, sequencename: str, registration: bool = False, statistics: bool = False, selection: bool = False
+    ):
         super().__init__()
         self.append(CommandArgument(sequencename))
         self.append(CommandFlag("reg", registration))
@@ -3714,7 +3716,7 @@ class seqprofile(BaseCommand):
                 self.append(CommandOption("xaxis", axis_wave_length))
             elif axis_wave_number is not None:
                 self.append(CommandOption("xaxis", axis_wave_number))
-        
+
         if wave_number_1 is not None or wave_length_1 is not None:
             if wave_number_1 is not None:
                 self.append(CommandOption("wavenumber1", wave_number_1))
@@ -3722,7 +3724,7 @@ class seqprofile(BaseCommand):
                 self.append(CommandOption("wavelength1", wave_length_1))
             if wn1at is not None:
                 self.append(CommandOption("wn1at", f"{wn1at[0]},{wn1at[1]}"))
-            
+
             if wave_number_2 is not None:
                 self.append(CommandOption("wavenumber2", wave_number_2))
             elif wave_length_2 is not None:
@@ -3836,7 +3838,7 @@ class seqplatesolve(BaseCommand):
         self.append(CommandFlag("force", force_plate_solve))
         self.append(CommandFlag("noreg", noreg))
         self.append(CommandOption("disto", disto))
-        
+
         if limit_mag == magnitude_option.MAGNITUDE_OFFSET and magnitude_value != 0.0:
             if magnitude_value > 0.0:
                 self.append(CommandOption("limitmag", f"+{magnitude_value}"))
@@ -3846,7 +3848,7 @@ class seqplatesolve(BaseCommand):
             self.append(CommandOption("limitmag", magnitude_value))
         if local_asnet and catalog is not None:
             raise ValueError("catalog cannot be changed when using astrometry.net")
-        
+
         self.append(CommandOption("catalog", catalog))
         self.append(CommandFlag("nocrop", nocrop))
         self.append(CommandFlag("nocache", nocache))
@@ -4479,7 +4481,7 @@ class spcc(BaseCommand):
                 self.append(CommandOption("limitmag", magnitude_value))
         elif limit_mag == magnitude_option.ABSOLUTE_MAGNITUDE:
             self.append(CommandOption("limitmag", magnitude_value))
-        
+
         if monosensor is not None:
             self.append(CommandOption("monosensor", monosensor))
             self.append(CommandOption("rfilter", rfilter))
@@ -4509,7 +4511,7 @@ class spcc(BaseCommand):
         if atmos is not None:
             self.append(CommandOption("atmos", atmos))
             self.append(CommandOption("obsheight", obsheight))
-        
+
         if pressure is not None and slp is not None:
             raise ValueError("pressure and slp cannot both be provided")
         self.append(CommandOption("pressure", pressure))

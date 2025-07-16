@@ -9,7 +9,19 @@ import tempfile
 import typing as t
 
 from async_siril.siril import SirilCli
-from async_siril.command import setext, set32bits, cd, convert, stack, register, seqsubsky, seqapplyreg, mirrorx, load, save
+from async_siril.command import (
+    setext,
+    set32bits,
+    cd,
+    convert,
+    stack,
+    register,
+    seqsubsky,
+    seqapplyreg,
+    mirrorx,
+    load,
+    save,
+)
 from async_siril.command import fits_extension, stack_norm
 from async_siril.helpers import BestRejection
 
@@ -24,9 +36,7 @@ class CreateMasterLight:
         fits_extension, cappa.Arg(short=True, default=fits_extension.FITS_EXT_FIT, help="Extension of the Light frames")
     ]
 
-    background_extraction: t.Annotated[
-        bool, cappa.Arg(short=True, default=False, help="Enable background extraction")
-    ]
+    background_extraction: t.Annotated[bool, cappa.Arg(short=True, default=False, help="Enable background extraction")]
     name: t.Annotated[str, cappa.Arg(short=True, default="LIGHT_2025-06-30", help="Name of the master light")]
 
     async def __call__(self) -> None:
@@ -43,7 +53,7 @@ class CreateMasterLight:
         with tempfile.TemporaryDirectory(dir=self.pp_folder) as tempdir:  # type: ignore
             temp = pathlib.Path(tempdir)
             log.info(f"temp dir: {temp}")
-            
+
             # Find the best rejection method
             rejection = BestRejection.find_best_rejection(list(self.pp_folder.glob(f"*.{self.ext.value}")))
 

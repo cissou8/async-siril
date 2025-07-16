@@ -56,9 +56,11 @@ class SirilCli(object):
     async def _start(self):
         logger.debug("Initializing Siril CLI with Async Consumer & Producer")
         self._consumer.start()
+        logger.debug("Siril CLI outpipe: %s", self._consumer.pipe_path)
         self._producer.start()
+        logger.debug("Siril CLI inpipe: %s", self._producer.pipe_path)
 
-        params = ["--pipe", "--inpipe", self._producer.fifo_path, "--outpipe", self._consumer.fifo_path]
+        params = ["--pipe", "--inpipe", self._producer.pipe_path, "--outpipe", self._consumer.pipe_path]
         if self._cwd is not None:
             params.insert(0, "-d")
             params.insert(1, str(self._cwd))

@@ -28,7 +28,9 @@ def extract_class_docs(source_text: str) -> dict[str, str]:
     return class_blocks
 
 
-def replace_docstrings(destination_text: str, class_docs: dict[str, str]) -> tuple[str, list[str], list[str], list[str]]:
+def replace_docstrings(
+    destination_text: str, class_docs: dict[str, str]
+) -> tuple[str, list[str], list[str], list[str]]:
     """
     Replaces docstrings in destination_text using entries from class_docs.
     Returns the updated destination text and a list of missing classes.

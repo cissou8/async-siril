@@ -3,6 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from dataclasses import dataclass
 
+
 @dataclass
 class Rect:
     x: int
@@ -153,6 +154,7 @@ class catalog_option(Enum):
     LOCAL_GAIA = "localgaia"
     GAIA = "gaia"
 
+
 class online_catalog(Enum):
     TYCHO2 = "tycho2"
     NOMAD = "nomad"
@@ -166,13 +168,15 @@ class online_catalog(Enum):
     SIMBAD = "simbad"
     AAVSO_VSP = "aavso_chart"
     EXOPLANET_ARCHIVE = "exo"
-    PGC = "pgc" 
+    PGC = "pgc"
     SOLSYS = "solsys"
+
 
 class extract_resample(Enum):
     HA = "ha"
     OIII = "oiii"
-    
+
+
 class ght_weighting(Enum):
     HUMAN = "human"
     EVEN = "even"
@@ -180,11 +184,11 @@ class ght_weighting(Enum):
     SATURATION = "sat"
 
 
-
 class Channel(Enum):
     RED = 0
     GREEN = 1
     BLUE = 2
+
 
 class channel_label(Enum):
     RED = "R"
@@ -200,22 +204,27 @@ class limit_option(Enum):
     CLIP = "clip"
     POS_RESCALE = "posrescale"
     RESCALE = "rescale"
-    
+
+
 class wavelet_type(Enum):
     LINEAR = 1
     BSPLINE = 2
+
 
 class star_range(Enum):
     NARROW = "narrow"
     WIDE = "wide"
 
+
 class find_star_catalog(Enum):
     NOMAD = "nomad"
     APASS = "apass"
 
+
 class graxpert_compute(Enum):
     GPU = "gpu"
     CPU = "cpu"
+
 
 class graxpert_algo(Enum):
     AI = "ai"
@@ -223,15 +232,18 @@ class graxpert_algo(Enum):
     KRIGING = "kriging"
     SPLINE = "spline"
 
+
 class graxpert_mode(Enum):
     SUB = "sub"
     DIV = "div"
+
 
 class graxpert_kernel(Enum):
     THINPLATE = "thinplate"
     QUINTIC = "quintic"
     CUBIC = "cubic"
     LINEAR = "linear"
+
 
 class drizzle_kernel(Enum):
     POINT = "point"
@@ -241,10 +253,12 @@ class drizzle_kernel(Enum):
     LANCZOS2 = "lanczos2"
     LANCZOS3 = "lanczos3"
 
+
 class split_option(Enum):
     HSL = "hsl"
     HSV = "hsv"
     CIELAB = "lab"
+
 
 class spcc_list_type(Enum):
     OSCSENSOR = "oscsensor"
@@ -256,10 +270,12 @@ class spcc_list_type(Enum):
     OSCLPF = "osclpf"
     WHITEREF = "whiteref"
 
+
 class stat_detail(Enum):
     BASIC = "basic"
     MAIN = "main"
     FULL = "full"
+
 
 class psf_method(Enum):
     CLEAR = "clear"
@@ -268,6 +284,7 @@ class psf_method(Enum):
     BLIND = "blind"
     STARS = "stars"
     MANUAL = "manual"
+
 
 class manual_psf_method(Enum):
     GAUSSIAN = "gaussian"

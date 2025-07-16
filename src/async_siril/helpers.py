@@ -17,7 +17,7 @@ class BestRejection:
     def find_best_rejection(images: t.List[pathlib.Path]) -> BestRejection:
         if len(images) == 0:
             raise ValueError("At least 1 image is required to find the best rejection")
-        
+
         if len(images) <= 6:
             return BestRejection(
                 method=stack_rejection.REJECTION_PERCENTILE,
@@ -36,5 +36,3 @@ class BestRejection:
                 low_threshold=5,
                 high_threshold=5,
             )
-            
-        

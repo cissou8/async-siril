@@ -7,7 +7,6 @@ from async_siril.command_types import sequence_framing
 from async_siril.command_types import sequence_filter_type
 
 
-
 def test_register_default():
     _command = command.register("sequence")
     assert str(_command) == "register sequence"
@@ -80,7 +79,10 @@ def test_seqapplyreg_full():
         framing=sequence_framing.FRAME_COG,
         interp=pixel_interpolation.INTERP_CUBIC,
         drizzle=True,
-        filters=[SequenceFilter(sequence_filter_type.FILTER_WFWHM, percent=80), SequenceFilter(sequence_filter_type.FILTER_INCLUSION)],
+        filters=[
+            SequenceFilter(sequence_filter_type.FILTER_WFWHM, percent=80),
+            SequenceFilter(sequence_filter_type.FILTER_INCLUSION),
+        ],
     )
     assert (
         str(_command) == "seqapplyreg sequence -prefix=prefix -layer=1 -framing=cog -interp=cubic "

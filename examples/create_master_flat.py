@@ -47,7 +47,9 @@ class CreateMasterFlat:
                 await siril.command(calibrate(self.name, bias=f"{str(self.bias)}"))
 
                 # Stack the calibrated flat frames into a master flat
-                await siril.command(stack(f"pp_{self.name}", norm=stack_norm.NORM_MUL, out=f"../../{self.name}_stacked"))
+                await siril.command(
+                    stack(f"pp_{self.name}", norm=stack_norm.NORM_MUL, out=f"../../{self.name}_stacked")
+                )
 
         log.info("Master flat created")
 

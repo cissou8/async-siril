@@ -26,7 +26,10 @@ def test_calibrate_mono_darkopt():
         cosmetic_correction_from_dark=False,
         cosmetic_correction_from_bad_pixel_map="bad pixels.txt",
     )
-    assert str(_command) == "calibrate light_ -bias==$OFFSET*64 -dark=master_dark_30s -flat=pp_flat_stacked -cc=bpm 'bad pixels.txt' -opt -prefix=dopp_"
+    assert (
+        str(_command)
+        == "calibrate light_ -bias==$OFFSET*64 -dark=master_dark_30s -flat=pp_flat_stacked -cc=bpm 'bad pixels.txt' -opt -prefix=dopp_"
+    )
     assert _command.valid
 
 

@@ -12,6 +12,7 @@ Async Siril is an asyncio based python wrapper around [Siril 1.4.0](https://www.
 * example CLI commands built for calibration, registration & stacking workflows [examples](./examples)
 * some helpers for common logic (see `async_siril.helpers`)
 * minimal dependencies (`asyncio`, `structlog`, `psutil`, `attrs`)
+* Linux, Mac, & Windows support
 
 ## Requirements
 
@@ -104,16 +105,16 @@ if __name__ == "__main__":
 * [x] logging cleanup and namespaces
 * [x] updated readme with how to
 * [x] How to contribute
-* [ ] Updated LICENSE  / Type ???
+* [x] Confirm Linux & Windows support
+* [x] Updated LICENSE
 * [ ] Gitops / CI / CD
 * [ ] publish step to PyPI
-* [ ] Confirm Linux & Windows support
 
 ### Future
+* [ ] multi process support (named pipes need to be dynamic, only available on Linux)
 * [ ] developer docs
 * [ ] make rgb cli example
 * [ ] clean up the command & types import signatures to be less verbose
-* [ ] multi process support (named pipes need to be dynamic)
 * [ ] multi process examples (ex. stack by filter in parallel by process)
 * [ ] exposing cgroup aware startup (for support in containerized environments)
 * [ ] base container image usage with Siril pre-installed

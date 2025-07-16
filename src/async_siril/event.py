@@ -3,12 +3,10 @@ import structlog.stdlib
 import typing as t
 import os
 import re
+import sys
+from enum import Enum
 
 logger = structlog.stdlib.get_logger("async_siril")
-
-# Custom pipes for Siril CLI communications
-custom_read_pipe_name = "/tmp/async_siril_command.out"
-custom_write_pipe_name = "/tmp/async_siril_command.in"
 
 
 class SirilEvent:
@@ -72,17 +70,18 @@ class SirilEvent:
 
 class AsyncSirilEventConsumer:
     def __init__(self):
-        loop = asyncio.get_event_loop()
+        self._loop = asyncio.get_event_loop()
         self.queue = asyncio.Queue()
-        self.fifo_path = custom_read_pipe_name
-        self.fifo_closed = loop.create_future()
-        self.siril_ready = loop.create_future()
+        self.fifo_closed = self._loop.create_future()
+        self.siril_ready = self._loop.create_future()
         self._running = False
+        self._pipe = PipeClient(mode=PipeMode.READ)
 
-        # clean up from last run
-        self._safe_remove_fifo()
+    @property
+    def pipe_path(self):
+        return self._pipe.path
 
-    def start(self) -> asyncio.Task:
+    def start(self):
         """Return a task that runs the consumer loop in the background."""
         self._running = True
         self._task = asyncio.create_task(self._run(), name=type(self).__name__)
@@ -96,63 +95,62 @@ class AsyncSirilEventConsumer:
         if self._task:
             self._task.cancel()
 
-        self._safe_remove_fifo()
+        if self._pipe:
+            self._pipe.close()
 
     async def _run(self):
         """Main consumer loop that waits for writers and reads FIFO."""
-        if not os.path.exists(self.fifo_path):
-            os.mkfifo(self.fifo_path)
+        if not self._running:
+            return
 
-        while self._running:
-            try:
-                with open(self.fifo_path, "r") as fifo:
-                    logger.info("Consumer fifo pipe opened")
+        try:
+            logger.debug(f"consumer path: {self._pipe.path}")
+            logger.debug(f"consumer readable: {True}")
+            logger.debug(f"consumer writable: {False}")
 
-                    async for event in self._aiter_events(fifo):
-                        if event.siril_ready:
-                            logger.info("Consumer received ready event")
-                            self.siril_ready.set_result(None)
-                        else:
-                            self.queue.put_nowait(event)
+            # Wait for the client to connect and create a stream (blocking)
+            await self._pipe.connect()
 
-                    logger.info("EOF from the consumer")
-            except Exception as e:
-                logger.info(f"Error in consumer task: {e}")
-                await asyncio.sleep(1)
+            logger.info("Consumer fifo pipe opened")
 
-    async def _aiter_events(self, file_obj) -> t.AsyncGenerator[SirilEvent, None]:
+            async for event in self._aiter_events():
+                if event.siril_ready:
+                    logger.info("Consumer received ready event")
+                    self.siril_ready.set_result(None)
+                else:
+                    self.queue.put_nowait(event)
+
+            logger.info("EOF from the consumer")
+        except Exception as e:
+            logger.info(f"Error in consumer task: {e}")
+            await asyncio.sleep(1)
+
+    async def _aiter_events(self) -> t.AsyncGenerator[SirilEvent, None]:
         """Asynchronously yield events from a blocking file object."""
-        loop = asyncio.get_event_loop()
         while self._running:
-            line = await loop.run_in_executor(None, file_obj.readline)
+            line = await self._pipe.read_line()
             if line == "":
                 logger.info("Consumer fifo pipe closed")
                 self.fifo_closed.set_result(None)
                 break
-            yield SirilEvent(line.rstrip())
 
-    def _safe_remove_fifo(self):
-        try:
-            if os.path.exists(self.fifo_path):
-                os.remove(self.fifo_path)
-        except OSError as e:
-            logger.error("Failed to remove Consumer FIFO: %s" % e)
+            yield SirilEvent(line)
 
 
 class AsyncSirilCommandProducer:
     def __init__(self):
         self._loop = asyncio.get_event_loop()
         self._queue = asyncio.Queue()
-        self._writer = None
         self._task = None
         self._running = False
-        self.fifo_path = custom_write_pipe_name
         self.fifo_closed = self._loop.create_future()
+        self._pipe = PipeClient(mode=PipeMode.WRITE)
 
-        # clean up from last run
-        self._safe_remove_fifo()
+    @property
+    def pipe_path(self):
+        return self._pipe.path
 
-    def start(self) -> asyncio.Task:
+    def start(self):
         """Starts the background writer task."""
         self._running = True
         self._task = asyncio.create_task(self._run(), name=type(self).__name__)
@@ -168,7 +166,8 @@ class AsyncSirilCommandProducer:
         if self._task:
             self._task.cancel()
 
-        self._safe_remove_fifo()
+        if self._pipe:
+            self._pipe.close()
 
     async def send(self, command: str):
         """Send a message to be written to the FIFO."""
@@ -176,32 +175,118 @@ class AsyncSirilCommandProducer:
 
     async def _run(self):
         """Main producer loop that waits for messages and writes them to the FIFO."""
-        if not os.path.exists(self.fifo_path):
-            os.mkfifo(self.fifo_path)
+        if not self._running:
+            return
 
         try:
-            # Block until a reader opens the FIFO
-            self._writer = await self._loop.run_in_executor(None, lambda: open(self.fifo_path, "w"))
+            logger.debug(f"producer path: {self._pipe.path}")
+            logger.debug(f"producer readable: {False}")
+            logger.debug(f"producer writable: {True}")
+
+            # Wait for the client to connect and create a stream (blocking)
+            await self._pipe.connect()
+
+            logger.info("Producer fifo pipe opened")
 
             while self._running:
                 try:
                     message = await self._queue.get()
-                    await self._loop.run_in_executor(None, self._write_line, message)
+                    await self._pipe.write_line(message)
                 except asyncio.CancelledError:
                     break
         finally:
-            if self._writer:
-                self._writer.close()
+            if self._pipe:
+                self._pipe.close()
 
         logger.info("The producer was nicely stopped.")
 
-    def _write_line(self, message: str):
-        self._writer.write(message + "\n")
-        self._writer.flush()
 
-    def _safe_remove_fifo(self):
-        try:
-            if os.path.exists(self.fifo_path):
-                os.remove(self.fifo_path)
-        except OSError as e:
-            logger.error("Failed to remove Producer FIFO: %s" % e)
+class PipeMode(Enum):
+    READ = "read"
+    WRITE = "write"
+
+    @property
+    def default_path(self):
+        if sys.platform == "win32":
+            # Have to use the standard names only on windows
+            custom_read_pipe_name = r"\\.\pipe\siril_command.out"
+            custom_write_pipe_name = r"\\.\pipe\siril_command.in"
+        else:
+            # Custom pipes for Siril CLI supported on unix/linux only
+            custom_read_pipe_name = "/tmp/siril_command.out"
+            custom_write_pipe_name = "/tmp/siril_command.in"
+
+        if self == PipeMode.READ:
+            return custom_read_pipe_name
+        elif self == PipeMode.WRITE:
+            return custom_write_pipe_name
+
+
+class PipeClient:
+    def __init__(self, mode: PipeMode, encoding: str = "utf-8"):
+        self.path = mode.default_path
+        self.mode = mode
+        self.encoding = encoding
+        self._file = None
+        self._loop = asyncio.get_event_loop()
+
+    async def connect(self):
+        if self._is_windows:
+            await self._connect_windows()
+        else:
+            await self._connect_unix()
+
+    async def _connect_unix(self):
+        while not os.path.exists(self.path):
+            await asyncio.sleep(0.1)
+        self._file = await asyncio.to_thread(open, self.path, self._open_mode, encoding=self.encoding)
+
+    async def _connect_windows(self):
+        while True:
+            try:
+                # 'b' mode required for named pipes on Windows, no buffering
+                self._file = await asyncio.to_thread(open, self.path, self._open_mode, buffering=0)
+                break
+            except FileNotFoundError:
+                await asyncio.sleep(0.1)
+
+    def close(self):
+        if self._file:
+            self._file.close()
+            self._file = None
+
+    async def write_line(self, message: str):
+        if self.mode != PipeMode.WRITE:
+            raise RuntimeError("Pipe not in write mode")
+        if not self._file:
+            raise RuntimeError("Pipe not connected")
+
+        encoded = (message + "\n").encode(self.encoding) if self._is_binary else message + "\n"
+        await self._loop.run_in_executor(None, self._file.write, encoded)
+        await self._loop.run_in_executor(None, self._file.flush)
+
+    async def read_line(self) -> str:
+        if self.mode != PipeMode.READ:
+            raise RuntimeError("Pipe not in read mode")
+        if not self._file:
+            raise RuntimeError("Pipe not connected")
+
+        line = await self._loop.run_in_executor(None, self._file.readline)
+        if isinstance(line, bytes):
+            return line.decode(self.encoding).rstrip()
+        return line.rstrip()
+
+    @property
+    def _is_windows(self):
+        return sys.platform == "win32"
+
+    @property
+    def _is_binary(self):
+        return self._is_windows
+
+    @property
+    def _open_mode(self):
+        if self.mode == PipeMode.READ:
+            return "rb" if self._is_windows else "r"
+        elif self.mode == PipeMode.WRITE:
+            return "wb" if self._is_windows else "w"
