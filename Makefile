@@ -1,3 +1,16 @@
+include .env
+
+clean:
+	echo "cleaning build folder..."
+	rm -rf ./dist
+
+build: clean
+	# bump the version with `uv version --bump <major|minor|patch> OR uv version <version>`
+	uv build --no-sources
+
+publish:
+	uv publish --token ${UV_PUBLISH_TOKEN}
+
 test:
 	uv run pytest
 

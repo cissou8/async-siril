@@ -1,4 +1,8 @@
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![image](https://img.shields.io/pypi/v/async-siril.svg)](https://pypi.python.org/pypi/async-siril)
+[![image](https://img.shields.io/pypi/l/async-siril.svg)](https://pypi.python.org/pypi/async-siril)
+[![image](https://img.shields.io/pypi/pyversions/async-siril.svg)](https://pypi.python.org/pypi/async-siril)
+[![Actions status](https://github.com/KyleLeNeau/async-siril/actions/workflows/ci.yml/badge.svg)](https://github.com/KyleLeNeau/async-siril/actions)
 
 # async-siril
 
@@ -90,37 +94,7 @@ if __name__ == "__main__":
 
 ## Roadmap
 
-### Immediate
-* [x] smart source the siril cli
-* [x] setup logging correctly
-* [x] async examples with cappa
-* [x] full on command listing
-* [x] automated command coverage checking
-* [x] review all python commands and their types (see "TODO:")
-* [x] pytest setup for common commands
-* [x] updated examples with how to
-* [x] make flats cli example
-* [x] add type check with `ty` tool
-* [x] make linear stack cli example
-* [x] logging cleanup and namespaces
-* [x] updated readme with how to
-* [x] How to contribute
-* [x] Confirm Linux & Windows support
-* [x] Updated LICENSE
-* [x] Gitops / CI / CD
-* [ ] publish step to PyPI (and update docs to install)
-
-### Future
-* [ ] multi process support (named pipes need to be dynamic, only available on Linux)
-* [ ] developer docs
-* [ ] make rgb cli example
-* [ ] clean up the command & types import signatures to be less verbose
-* [ ] multi process examples (ex. stack by filter in parallel by process)
-* [ ] exposing cgroup aware startup (for support in containerized environments)
-* [ ] base container image usage with Siril pre-installed
-* [ ] multiple siril version support (how to with generated commands)
-* [ ] additional composit helpers or commands to reduce boilerplate repetition and provide best practices
-* [ ] More test coverage and coverage reporting
+Please see [ROADMAP.md](./ROADMAP.md) for more details.
 
 ## Contributing
 
