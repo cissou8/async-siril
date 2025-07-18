@@ -1,4 +1,4 @@
-include .env
+-include .env
 
 clean:
 	echo "cleaning build folder..."
