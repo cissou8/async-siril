@@ -57,7 +57,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-You are not required to use the Siril CLI commands and if you know what you are doing, you can use the library to run any command you want.
+For advanced use cases you can run the Siril commands directly as strings.
 
 ```python
 from async_siril import SirilCli
@@ -106,20 +106,18 @@ PRs are welcome & appreciated! See the [contributing guide](./CONTRIBUTING.md) t
 
 [pysiril](https://gitlab.com/free-astro/pysiril) is a great library for interacting with Siril. However, it is not asyncio based and does not provide a pythonic interface to the Siril command line interface.
 
-#### Siril just added python scripts, how is this different?
+#### Siril just added python scripting, how is this different?
 
-The new python scripts added to Siril are a great addition for in app scripts and can do a lot of powerful things. However, sometimes you just need a simple interface for headless operations of Siril.
+The new python scripting added to Siril is a great improvement for in-app scripts. However, sometimes you just need a simple interface for headless operations of Siril.
 
 ## Acknowledgements
 
-Siril is a fantastic piece of software and am grateful to the [free-astro](https://gitlab.com/free-astro) team for their hard work. And a special thanks to [Vincent](https://gitlab.com/Vincent-FA) for answering questions and providing support.
+Siril is a fantastic piece of software and I am grateful to the [free-astro](https://gitlab.com/free-astro) team for their hard work. Special thanks to [Vincent](https://gitlab.com/Vincent-FA) for answering questions and providing support.
 
 ## License
 
-async-siril is licensed under either of
+async-siril is licensed under:
 
 - BSD-3-Clause license ([LICENSE-BSD](LICENSE-BSD) or <https://opensource.org/licenses/BSD-3-Clause>)
-
-at your option.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in async-siril by you, as defined in the BSD-3-Clause license, shall be dually licensed as above, without any additional terms or conditions.
