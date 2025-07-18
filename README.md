@@ -107,8 +107,8 @@ if __name__ == "__main__":
 * [x] How to contribute
 * [x] Confirm Linux & Windows support
 * [x] Updated LICENSE
-* [ ] Gitops / CI / CD
-* [ ] publish step to PyPI
+* [x] Gitops / CI / CD
+* [ ] publish step to PyPI (and update docs to install)
 
 ### Future
 * [ ] multi process support (named pipes need to be dynamic, only available on Linux)

@@ -1,17 +1,17 @@
-name: Continuous Integration
+name: Publish on Latest Release
 
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
-  test:
+  publish:
+    if: |
+      github.event.release.draft == false &&
+      github.event.release.prerelease == false
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -28,8 +28,10 @@ jobs:
       - name: Install the project
         run: uv sync --locked --all-extras --dev
 
-      - name: Lint & Type Checking
-        run: make check
-      
-      - name: Run Tests
-        run: make test
+      - name: Build package
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
