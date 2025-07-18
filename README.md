@@ -118,10 +118,8 @@ Siril is a fantastic piece of software and am grateful to the [free-astro](https
 
 async-siril is licensed under either of
 
-- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
-  <https://www.apache.org/licenses/LICENSE-2.0>)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or <https://opensource.org/licenses/MIT>)
+- BSD-3-Clause license ([LICENSE-BSD](LICENSE-BSD) or <https://opensource.org/licenses/BSD-3-Clause>)
 
 at your option.
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in async-siril by you, as defined in the Apache-2.0 license, shall be dually licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in async-siril by you, as defined in the BSD-3-Clause license, shall be dually licensed as above, without any additional terms or conditions.
