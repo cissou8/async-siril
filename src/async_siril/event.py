@@ -13,6 +13,7 @@ class SirilEvent:
     """
     Represents an event from the Siril CLI
     """
+
     LOG = "log"
     PROGRESS = "progress"
     STATUS = "status"

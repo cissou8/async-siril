@@ -34,7 +34,7 @@ class SirilCli(object):
     async with SirilCli() as siril:
         await siril.command("stack")
     """
-    
+
     def __init__(
         self,
         siril_exe: str = "siril-cli",
@@ -214,8 +214,8 @@ class SirilCli(object):
             possible_paths.append("/Applications/Siril.app/Contents/MacOS/siril-cli")
             possible_paths.append("/Applications/Siril.app/Contents/MacOS/Siril")
         elif system == "Linux":
-            possible_paths.append("/usr/bin/siril")
-            possible_paths.append("/usr/local/bin/siril")
+            possible_paths.append("/usr/local/bin/siril-cli")
+            possible_paths.append("/usr/bin/siril-cli")
 
         for path in possible_paths:
             if os.path.exists(path):

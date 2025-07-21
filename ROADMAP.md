@@ -23,7 +23,7 @@
 ### Future
 * [x] exposing cgroup aware startup (for support in containerized environments)
 * [x] developer docs
-* [ ] base container image usage with Siril pre-installed (started)
+* [x] base container image usage with Siril pre-installed (started)
 * [ ] multi process support (named pipes need to be dynamic, only available on Linux)
 * [ ] multi process examples (ex. stack by filter in parallel by process)
 * [ ] make rgb cli example

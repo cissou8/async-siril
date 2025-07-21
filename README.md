@@ -17,6 +17,7 @@ Async Siril is an asyncio based python wrapper around [Siril 1.4.0](https://www.
 * some helpers for common logic (see `async_siril.helpers`)
 * minimal dependencies (`asyncio`, `structlog`, `psutil`, `attrs`)
 * Linux, Mac, & Windows support
+* Docker support (see [Dockerfile.siril](./Dockerfile.siril))
 
 ## Requirements
 
@@ -91,6 +92,19 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+## Docker (example only)
+
+You can use the example [Dockerfile.siril](./Dockerfile.siril) to build a docker image with Siril installed. This is useful for running the examples or for running Siril commands in a container.
+
+```bash
+docker build -f Dockerfile.siril -t async-siril:latest .
+```
+
+Once built you can test the interface with this (runs `uv run ./examples/test_siril.py`):
+
+```bash
+docker run --rm -it --name siril-test async-siril:latest
+```
 
 ## Roadmap
 

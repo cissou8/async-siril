@@ -63,3 +63,8 @@ extend-exclude = ["**/generated/*"]
 exclude = [
     "**/generated/*",
 ]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]

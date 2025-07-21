@@ -10,6 +10,7 @@ class ConversionEntry:
     """
     Represents a single entry in a conversion file
     """
+
     original_file: pathlib.Path
     converted_file: pathlib.Path
 
@@ -19,6 +20,7 @@ class ConversionFile:
     """
     Represents a conversion file from siril as a result of the `convert` command or other sequence operations
     """
+
     entries: t.List[ConversionEntry]
     file: pathlib.Path
 

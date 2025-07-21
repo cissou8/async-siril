@@ -25,4 +25,9 @@ format:
 generate-commands:
 	cd packages/siril-command-src && uv run export_commands.py --clean
 	cd packages/siril-command-src && uv run merge_commands.py ../../src/async_siril/command.py
-	
+
+build-docker:
+	docker build -f Dockerfile.siril -t async-siril:latest .
+
+run-docker:
+	docker run --rm -it --name siril-test async-siril:latest
