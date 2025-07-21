@@ -55,7 +55,7 @@ class CreateMasterLight:
             log.info(f"temp dir: {temp}")
 
             # Find the best rejection method
-            rejection = BestRejection.find_best_rejection(list(self.pp_folder.glob(f"*.{self.ext.value}")))
+            rejection = BestRejection.find(list(self.pp_folder.glob(f"*.{self.ext.value}")))
 
             async with SirilCli(directory=self.pp_folder) as siril:
                 await siril.command(setext(self.ext))

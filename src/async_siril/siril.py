@@ -8,11 +8,11 @@ import typing as t
 
 from .command import BaseCommand, setcpu, set as siril_set, capabilities, setmem
 from .event import AsyncSirilEventConsumer, AsyncSirilCommandProducer
-from .system import container_aware_cpu_limit, container_aware_memory_limit_gb
+from .resources import SirilResource
 from pathlib import Path
 
+
 logger = structlog.stdlib.get_logger("async_siril")
-container_aware_limits = False
 
 
 class SirilError(Exception):
@@ -28,19 +28,24 @@ class SirilError(Exception):
 
 
 class SirilCli(object):
+    """
+    Main class for interacting with Siril using the async context manager pattern
+
+    async with SirilCli() as siril:
+        await siril.command("stack")
+    """
+    
     def __init__(
         self,
         siril_exe: str = "siril-cli",
         directory: t.Optional[Path] = None,
-        cpu_limit: t.Optional[int] = None,
-        memory_limit: t.Optional[str] = None,
+        resources: SirilResource = SirilResource.default_limits(),
     ):
         self._siril_exe = self._find_siril_cli(siril_exe)
         logger.info("Found Siril CLI executable: %s", self._siril_exe)
 
         self._cwd = directory
-        self._cpu_limit = container_aware_cpu_limit() if container_aware_limits else cpu_limit
-        self._memory_limit = container_aware_memory_limit_gb() if container_aware_limits else memory_limit
+        self._resources = resources
 
         self._process: t.Optional[asyncio.subprocess.Process] = None
         self._consumer = AsyncSirilEventConsumer()
@@ -89,13 +94,13 @@ class SirilCli(object):
 
         # Still needed as the first command to be called
         await self.command(requires("0.99.10"))
-        if self._cpu_limit is not None:
-            await self.command(setcpu(self._cpu_limit))
-        if self._memory_limit is not None:
+        if self._resources.cpu_limit is not None:
+            await self.command(setcpu(self._resources.cpu_limit))
+        if self._resources.memory_limit is not None:
             await self.command(siril_set("core.mem_mode", "1"))
-            await self.command(siril_set("core.mem_amount", self._memory_limit))
+            await self.command(siril_set("core.mem_amount", self._resources.memory_limit))
 
-        await self.command(setmem(0.9))
+        await self.command(setmem(self._resources.memory_percent))
         await self.command(capabilities())
         logger.info("AsyncSiril is ready for additional commands")
 
