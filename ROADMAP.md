@@ -21,13 +21,13 @@
 * [x] publish step to PyPI (and update docs to install)
 
 ### Future
+* [x] exposing cgroup aware startup (for support in containerized environments)
+* [x] developer docs
+* [ ] base container image usage with Siril pre-installed (started)
 * [ ] multi process support (named pipes need to be dynamic, only available on Linux)
-* [ ] developer docs
+* [ ] multi process examples (ex. stack by filter in parallel by process)
 * [ ] make rgb cli example
 * [ ] clean up the command & types import signatures to be less verbose
-* [ ] multi process examples (ex. stack by filter in parallel by process)
-* [ ] exposing cgroup aware startup (for support in containerized environments)
-* [ ] base container image usage with Siril pre-installed
 * [ ] multiple siril version support (how to with generated commands)
 * [ ] additional composit helpers or commands to reduce boilerplate repetition and provide best practices
 * [ ] More test coverage and coverage reporting

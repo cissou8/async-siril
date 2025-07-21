@@ -1,0 +1,23 @@
+# syntax = docker/dockerfile:1.4
+FROM ghcr.io/astral-sh/uv:debian-slim
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    software-properties-common \
+    git \
+    cmake \
+    wget \
+    tree
+
+# TODO: Not working yet
+RUN add-apt-repository ppa:lock042/siril && \
+    apt-get update && \
+    apt-get install -y \
+    siril
+
+WORKDIR /async-siril
+COPY . /async-siril
+RUN uv sync --locked --all-extras --dev
+
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["uv run ./examples/test_siril.py"]

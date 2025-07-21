@@ -10,6 +10,9 @@ logger = structlog.stdlib.get_logger("async_siril")
 
 
 class SirilEvent:
+    """
+    Represents an event from the Siril CLI
+    """
     LOG = "log"
     PROGRESS = "progress"
     STATUS = "status"
@@ -69,6 +72,10 @@ class SirilEvent:
 
 
 class AsyncSirilEventConsumer:
+    """
+    Represents the async reader of events from the Siril CLI
+    """
+
     def __init__(self):
         self._loop = asyncio.get_event_loop()
         self.queue = asyncio.Queue()
@@ -79,6 +86,7 @@ class AsyncSirilEventConsumer:
 
     @property
     def pipe_path(self):
+        """Returns the path to the pipe"""
         return self._pipe.path
 
     def start(self):
@@ -88,6 +96,7 @@ class AsyncSirilEventConsumer:
         return self._task
 
     def stop(self):
+        """Gracefully stop the background reader."""
         if self._running:
             logger.info("Stopping consumer fifo pipe")
             self._running = False
@@ -138,6 +147,10 @@ class AsyncSirilEventConsumer:
 
 
 class AsyncSirilCommandProducer:
+    """
+    Represents the async writer of commands to the Siril CLI
+    """
+
     def __init__(self):
         self._loop = asyncio.get_event_loop()
         self._queue = asyncio.Queue()
@@ -148,6 +161,7 @@ class AsyncSirilCommandProducer:
 
     @property
     def pipe_path(self):
+        """Returns the path to the pipe"""
         return self._pipe.path
 
     def start(self):
@@ -223,6 +237,10 @@ class PipeMode(Enum):
 
 
 class PipeClient:
+    """
+    Represents a pipe client for reading or writing to a text based fifo pipe
+    """
+
     def __init__(self, mode: PipeMode, encoding: str = "utf-8"):
         self.path = mode.default_path
         self.mode = mode
@@ -231,6 +249,7 @@ class PipeClient:
         self._loop = asyncio.get_event_loop()
 
     async def connect(self):
+        """Connect to the pipe and wait for open (cross platform)"""
         if self._is_windows:
             await self._connect_windows()
         else:
@@ -251,11 +270,13 @@ class PipeClient:
                 await asyncio.sleep(0.1)
 
     def close(self):
+        """Close the pipe"""
         if self._file:
             self._file.close()
             self._file = None
 
     async def write_line(self, message: str):
+        """Write a line to the pipe"""
         if self.mode != PipeMode.WRITE:
             raise RuntimeError("Pipe not in write mode")
         if not self._file:
@@ -266,6 +287,7 @@ class PipeClient:
         await self._loop.run_in_executor(None, self._file.flush)
 
     async def read_line(self) -> str:
+        """Read a line from the pipe"""
         if self.mode != PipeMode.READ:
             raise RuntimeError("Pipe not in read mode")
         if not self._file:

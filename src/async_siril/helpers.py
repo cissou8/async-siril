@@ -14,7 +14,8 @@ class BestRejection:
     high_threshold: float
 
     @staticmethod
-    def find_best_rejection(images: t.List[pathlib.Path]) -> BestRejection:
+    def find(images: t.List[pathlib.Path]) -> BestRejection:
+        """Find the best rejection method for a given number of images"""
         if len(images) == 0:
             raise ValueError("At least 1 image is required to find the best rejection")
 
