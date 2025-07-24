@@ -132,6 +132,6 @@ Siril is a fantastic piece of software and I am grateful to the [free-astro](htt
 
 async-siril is licensed under:
 
-- BSD-3-Clause license ([LICENSE-BSD](LICENSE-BSD) or <https://opensource.org/licenses/BSD-3-Clause>)
+- BSD-3-Clause license ([LICENSE](LICENSE) or <https://opensource.org/licenses/BSD-3-Clause>)
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in async-siril by you, as defined in the BSD-3-Clause license, shall be dually licensed as above, without any additional terms or conditions.
