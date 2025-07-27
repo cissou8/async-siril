@@ -46,6 +46,7 @@ from .command_types import (
     psf_method,
     manual_psf_method,
     sequence_filter_type,
+    SirilSetting,
 )
 
 
@@ -4177,14 +4178,17 @@ class set(BaseCommand):
     def __init__(
         self,
         import_file: t.Optional[str] = None,
-        key: t.Optional[str] = None,
-        value: t.Optional[str] = None,
+        key: t.Optional[str | SirilSetting] = None,
+        value: t.Optional[str | bool] = None,
     ):
         super().__init__()
         if import_file is not None:
             self.append(CommandOption("import", import_file))
         if key is not None and value is not None:
-            self.append(CommandArgument(f"{key}={value}"))
+            if isinstance(key, SirilSetting):
+                self.append(CommandArgument(f"{key.value}={value}"))
+            else:
+                self.append(CommandArgument(f"{key}={value}"))
         else:
             raise ValueError("key and value must be provided")
 

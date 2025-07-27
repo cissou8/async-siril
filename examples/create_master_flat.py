@@ -37,6 +37,7 @@ class CreateMasterFlat:
             log.info(f"temp dir: {temp}")
 
             async with SirilCli(directory=self.raw_folder) as siril:
+                # Caution: these settings are saved between Siril sessions
                 await siril.command(setext(self.ext))
                 await siril.command(set32bits())
 

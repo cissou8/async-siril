@@ -6,7 +6,8 @@ import asyncio
 import cappa
 
 from async_siril.siril import SirilCli
-from async_siril.command import set32bits
+from async_siril.command import get
+from async_siril.command_types import SirilSetting
 from rich.prompt import Confirm
 
 log = structlog.stdlib.get_logger()
@@ -18,7 +19,8 @@ class TestSiril:
         log.info("Testing Siril Interface")
 
         async with SirilCli() as siril:
-            await siril.command(set32bits())
+            await siril.set(SirilSetting.FORCE_16BIT, False)
+            await siril.command(get(list_all=True))
             Confirm.ask("Continue")
 
         log.info("Siril Interface completed")

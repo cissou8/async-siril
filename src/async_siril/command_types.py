@@ -4,6 +4,16 @@ from enum import Enum
 from dataclasses import dataclass
 
 
+class SirilSetting(Enum):
+    """Represents some of the common Siril settings, use `get -a` to discover more."""
+
+    EXTENSION = "core.extension"
+    FORCE_16BIT = "core.force_16bit"
+    MEM_MODE = "core.mem_mode"
+    MEM_AMOUNT = "core.mem_amount"
+    MEM_RATIO = "core.mem_ratio"
+
+
 @dataclass
 class Rect:
     x: int

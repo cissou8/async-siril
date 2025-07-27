@@ -58,6 +58,7 @@ class CreateMasterLight:
             rejection = BestRejection.find(list(self.pp_folder.glob(f"*.{self.ext.value}")))
 
             async with SirilCli(directory=self.pp_folder) as siril:
+                # Caution: these settings are saved between Siril sessions
                 await siril.command(setext(self.ext))
                 await siril.command(set32bits())
 

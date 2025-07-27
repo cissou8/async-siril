@@ -6,7 +6,8 @@ import platform
 import subprocess
 import typing as t
 
-from .command import BaseCommand, setcpu, set as siril_set, capabilities, setmem
+from .command import BaseCommand, setcpu, set as siril_set, capabilities
+from .command_types import SirilSetting
 from .event import AsyncSirilEventConsumer, AsyncSirilCommandProducer
 from .resources import SirilResource
 from pathlib import Path
@@ -97,10 +98,10 @@ class SirilCli(object):
         if self._resources.cpu_limit is not None:
             await self.command(setcpu(self._resources.cpu_limit))
         if self._resources.memory_limit is not None:
-            await self.command(siril_set("core.mem_mode", "1"))
-            await self.command(siril_set("core.mem_amount", self._resources.memory_limit))
+            await self.set(SirilSetting.MEM_MODE, "1")
+            await self.set(SirilSetting.MEM_AMOUNT, self._resources.memory_limit)
 
-        await self.command(setmem(self._resources.memory_percent))
+        await self.set(SirilSetting.MEM_RATIO, str(self._resources.memory_percent))
         await self.command(capabilities())
         logger.info("AsyncSiril is ready for additional commands")
 
@@ -179,6 +180,10 @@ class SirilCli(object):
                 logger.info("siril ready")
                 break
         logger.info("Command completed")
+
+    async def set(self, key: SirilSetting, value: str | bool):
+        """Set a Siril setting using the `set` command"""
+        await self.command(siril_set(key=key, value=str(value).lower()))
 
     async def __aenter__(self):
         await self.start()
