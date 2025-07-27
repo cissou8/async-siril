@@ -214,7 +214,7 @@ class conesearch(BaseCommand):
     
         conesearch [limit_magnitude] [-cat=] [-phot] [-obscode=] [-tag={on|off}] [-log={on|off}] [-trix=] [-out=]
     
-    Displays stars from the local catalog by default for the loaded plate solved image, down to the provided **limit_magnitude** (13 by default for most catalogues, except 14.5 for aavso_chart, 20 for solsys, and ommitted for pgc).
+    Displays stars from the local catalog by default for the loaded plate solved image, down to the provided **limit_magnitude** (13 by default for most catalogues, except 14.5 for aavso_chart, 20 for solsys, and omitted for pgc).
     An alternate online catalog can be specified with **-cat=**, taking values
     - for stars: tycho2, nomad, gaia, localgaia, ppmxl, bsc, apass, gcvs, vsx, simbad, aavso_chart
     - for exoplanets: exo
@@ -656,47 +656,6 @@ class ght(BaseCommand):
     If omitted B, LP and SP default to 0.0 ad HP defaults to 1.0.
     An optional argument (either **-human**, **-even** or **-independent**) can be passed to select either human-weighted or even-weighted luminance or independent colour channels for colour stretches. The argument is ignored for mono images. Alternatively, the argument **-sat** specifies that the stretch is performed on image saturation - the image must be color and all channels must be selected for this to work.
     Optionally the parameter **[channels]** may be used to specify the channels to apply the stretch to: this may be R, G, B, RG, RB or GB. The default is all channels. The clip mode can be set using the argument **-clipmode=**: values **clip**, **rescale**, **rgbblend** or **globalrescale** are accepted and the default is rgbblend
-    """
-
-
-class graxpert_bg(BaseCommand):
-    """
-    .. code-block:: text
-    
-        graxpert_bg [-algo=] [-mode=] [-kernel=] [-ai_batch_size=] [-pts_per_row=] [-splineorder=] [-samplesize=] [-smoothing=] [-bgtol=] [ { -gpu | -cpu } ] [-ai_version=] [-keep_bg]
-    
-    Runs the external tool GraXpert in background extraction mode.
-    
-    The following optional arguments may be provided:
-    
-    **-algo=** sets the background removal algorithm and must be one of **ai**, **rbf**, **kriging** or **spline**;
-    **-mode=** sets the background extraction mode and must be one of **sub** or **div**;
-    **-kernel=** sets the RBF kernel and must be one of **thinplate**, **quintic**, **cubic** or **linear**;
-    **-pts_per_row=** sets the number of points per row on the background sampling grid (default = 15);
-    **-samplesize=** sets the sampling box size for each sample (default = 25);
-    **-splineorder=** sets the spline order for use with the spline algorithm (default = 3);
-    **-bgtol=** sets the background tolerance between -2.0 and 6.0 (default 2.0);
-    **-smoothing=** sets the amount of background smoothing (default = 0.5);
-    **-keep_bg** sets GraXpert to save the indicative background image;
-    **-cpu** sets GraXpert to use CPU only;
-    **-gpu** sets GraXpert to use a GPU if available (and otherwise fall back to CPU);
-    **-ai_batch_size=** sets the batch size for AI operations (denoising and the background removal AI algorithm) (default = 4: bigger batch sizes may improve performance, especially on CPU, but require more memory). The optional argument **-ai_version=** forces a specific version of the AI model. Note that GraXpert AI background removal is comparatively fast anyway so at present there is little need to specify an older model for speed reasons even if running in CPU-only mode. If this argument is omitted, the latest available AI model version is used
-    """
-
-
-class graxpert_denoise(BaseCommand):
-    """
-    .. code-block:: text
-    
-        graxpert_denoise [-strength=] [ { -gpu | -cpu } [-ai_version=] ]
-    
-    Runs the external tool GraXpert in denoising mode.
-    
-    The following optional arguments may be provided:
-    
-    **-strength=** sets the denoising strength, between 0.0 and 1.0 (default = 0.8);
-    **-gpu** sets GraXpert to use a GPU if available (and otherwise fall back to CPU);
-    **-ai_batch_size=** sets the batch size for AI operations (denoising and the background removal AI algorithm) (default = 4: bigger batch sizes may improve performance, especially on CPU, but require more memory). The optional argument **-ai_version=** forces a specific version of the AI model. For CPU-only usage the latest models may run very slowly, in which case an older model version such as 2.0.0 may provide a more acceptable balance between performance and runtime. If this argument is omitted, the latest available AI model version is used
     """
 
 
@@ -1146,7 +1105,7 @@ class parse(BaseCommand):
         parse str [-r]
     
     Parses the string **str** using the information contained in the header of the image currently loaded. Main purpose of this command is to debug path parsing of header keys which can be used in other commands.
-    Option **-r** specifies the string is to be interpreted in read mode. In read mode, all wilcards defined in string **str** are used to find a file name matching the pattern. Otherwise, default mode is write mode and wildcards, if any, are removed from the string to be parsed.
+    Option **-r** specifies the string is to be interpreted in read mode. In read mode, all wildcards defined in string **str** are used to find a file name matching the pattern. Otherwise, default mode is write mode and wildcards, if any, are removed from the string to be parsed.
     
     If **str** starts with *$def* prefix, it will be recognized as a reserved keyword and looked for in the strings stored in gui_prepro.dark_lib, gui_prepro.flat_lib, gui_prepro.bias_lib or gui_prepro.stack_default for *$defdark*, *$defflat*, *$defbias* or *$defstack* respectively.
     The keyword *$seqname$* can also be used when a sequence is loaded
@@ -1800,30 +1759,6 @@ class seqght(BaseCommand):
     """
 
 
-class seqgraxpert_bg(BaseCommand):
-    """
-    .. code-block:: text
-    
-        seqgraxpert_bg sequencename [-algo=] [-mode=] [-kernel=] [-ai_batch_size=] [-pts_per_row=] [-splineorder=] [-samplesize=] [-smoothing=] [-bgtol=] [ { -gpu | -cpu } ] [-keep_bg]
-    
-    Applies the external GraXpert program to a sequence, in background extraction mode. The first argument must be the sequence name; the remaining arguments are the same as for the GRAXPERT_BG command
-    
-    Links: :ref:`graxpert_bg <graxpert_bg>`
-    """
-
-
-class seqgraxpert_denoise(BaseCommand):
-    """
-    .. code-block:: text
-    
-        seqgraxpert_denoise sequencename [-strength=] [ { -gpu | -cpu } ]
-    
-    Applies the external GraXpert program to a sequence, in denoising mode. The first argument must be the sequence name; the remaining arguments are the same as for the GRAXPERT_DENOISE command
-    
-    Links: :ref:`graxpert_denoise <graxpert_denoise>`
-    """
-
-
 class seqheader(BaseCommand):
     """
     .. code-block:: text
@@ -1878,7 +1813,7 @@ class seqmerge_cfa(BaseCommand):
     
     Merges 4 sequences of images to recombine the Bayer pattern. The sequences are specified in the arguments **sequencename0**, **sequencename1**, **sequencename2** and **sequencename3**.
     
-    The Bayer pattern to be reconstructed must be provided as the second argment as one of RGGB, BGGR, GBRG or GRBG (the order of the Bayer channels must match the order of the specified sequences).
+    The Bayer pattern to be reconstructed must be provided as the second argument as one of RGGB, BGGR, GBRG or GRBG (the order of the Bayer channels must match the order of the specified sequences).
     
     Note: all 4 input sequences **must** be present and have the same dimensions, bit depth and number of images.
     
@@ -1926,17 +1861,17 @@ class seqpsf(BaseCommand):
     """
     .. code-block:: text
     
-        seqpsf [sequencename channel { -at=x,y | -wcs=ra,dec }]
+        seqpsf sequencename [channel] [{ -at=x,y | -wcs=ra,dec }] [-followstar]
     
     Same command as PSF but runs on sequences. This is similar to the one-star registration, except results can be used for photometry analysis rather than aligning images and the coordinates of the star can be provided by options.
-    This command is what is called internally by the menu that appears on right click in the image, with the PSF for the sequence entry. By default, it will run with parallelisation activated; if registration data already exists for the sequence, they will be used to shift the search window in each image. If there is no registration data and if there is significant shift between images in the sequence, the default settings will fail to find stars in the initial position of the search area.
-    The follow star option can then be activated by going in the registration tab, selecting the one-star registration and checking the follow star movement box (default in headless if no registration data is available).
+    This command is what is called internally by the menu that appears on right click in the image, with the PSF for the sequence entry. If registration data already exist for the sequence, they will can be used to shift the search window in each image. If there is no registration data and if there is significant shift between images in the sequence, the default settings will fail to find stars in the initial position of the search area.
+    The follow star option can then be activated with the argument **-followstar**.
     
     Results will be displayed in the Plot tab, from which they can also be exported to a comma-separated values (CSV) file for external analysis.
     
     When creating a light curve, the first star for which seqpsf has been run, marked 'V' in the display, will be considered as the variable star. All others are averaged to create a reference light curve subtracted to the light curve of the variable star.
     
-    Currently, in headless operation, the command prints some analysed data in the console, another command allows several stars to be analysed and plotted as a light curve: LIGHT_CURVE. Arguments are mandatory in headless, with -at= allowing coordinates in pixels to be provided for the target star and -wcs= allowing J2000 equatorial coordinates to be provided
+    Currently, in headless operation, the command prints some analysed data in the console, another command allows several stars to be analysed and plotted as a light curve: LIGHT_CURVE. Arguments are mandatory: the sequence name must be provided ("." may be used to indicate the currently loaded sequence) and when headless it is mandatory to provide the coordinates of the star, with -at= allowing coordinates in pixels to be provided for the target star of -wcs= allowing J2000 equatorial coordinates to be provided
     
     Links: :ref:`psf <psf>`, :ref:`light_curve <light_curve>`
     """
@@ -2008,7 +1943,7 @@ class seqsb(BaseCommand):
     """
     .. code-block:: text
     
-        sb sequencename [-loadpsf=] [-alpha=] [-iters=]
+        seqsb sequencename [-loadpsf=] [-alpha=] [-iters=]
     
     The same as the SB command, but applies to a sequence which must be specified as the first argument
     

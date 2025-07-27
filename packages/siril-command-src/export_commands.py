@@ -81,20 +81,20 @@ class ExportSirilCommands:
         # Get the generated directory
         generated_dir = self._make_generated_dir(current_dir)
 
-        if not (doc_dir / "siril-doc-main").exists():
+        if not (doc_dir / "siril-doc-1.4").exists():
             log.info("Downloading and unzipping docs")
             # Download and unzip the docs for processing
             subprocess.run(
                 [
                     "curl",
-                    "https://gitlab.com/free-astro/siril-doc/-/archive/main/siril-doc-main.zip",
+                    "https://gitlab.com/free-astro/siril-doc/-/archive/1.4/siril-doc-1.4.zip",
                     "-o",
-                    f"{doc_dir}/siril-doc-main.zip",
+                    f"{doc_dir}/siril-doc-1.4.zip",
                 ]
             )
-            subprocess.run(["unzip", f"{doc_dir}/siril-doc-main.zip", "-d", doc_dir])
+            subprocess.run(["unzip", f"{doc_dir}/siril-doc-1.4.zip", "-d", doc_dir])
 
-        commands = self.parse_commands(doc_dir / "siril-doc-main" / "doc" / "Commands.rst")
+        commands = self.parse_commands(doc_dir / "siril-doc-1.4" / "doc" / "Commands.rst")
         log.info(f"Parsed {len(commands)} commands")
 
         # Filter out non-scriptable commands

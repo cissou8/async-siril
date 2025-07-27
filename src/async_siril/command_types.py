@@ -231,30 +231,6 @@ class find_star_catalog(Enum):
     APASS = "apass"
 
 
-class graxpert_compute(Enum):
-    GPU = "gpu"
-    CPU = "cpu"
-
-
-class graxpert_algo(Enum):
-    AI = "ai"
-    RBF = "rbf"
-    KRIGING = "kriging"
-    SPLINE = "spline"
-
-
-class graxpert_mode(Enum):
-    SUB = "sub"
-    DIV = "div"
-
-
-class graxpert_kernel(Enum):
-    THINPLATE = "thinplate"
-    QUINTIC = "quintic"
-    CUBIC = "cubic"
-    LINEAR = "linear"
-
-
 class drizzle_kernel(Enum):
     POINT = "point"
     TURBO = "turbo"
