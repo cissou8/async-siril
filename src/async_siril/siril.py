@@ -208,7 +208,7 @@ class SirilCli(object):
         system = platform.system()
         possible_paths = []
         if system == "Windows":
-            possible_paths.append("C:/msys64/mingw64/bin/siril-cli.exe") # msys2 path when building locally
+            possible_paths.append("C:/msys64/mingw64/bin/siril-cli.exe")  # msys2 path when building locally
             possible_paths.append("C:/Program Files/SiriL/bin/siril-cli.exe")
         elif system == "Darwin":
             possible_paths.append("/Applications/Siril.app/Contents/MacOS/siril-cli")
