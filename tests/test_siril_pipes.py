@@ -15,7 +15,10 @@ class TestAsyncSirilEventConsumer:
             mock_instance.read_line = AsyncMock()
             mock_instance.close = Mock()
             mock_pipe_client.return_value = mock_instance
-            return AsyncSirilEventConsumer()
+            consumer_instance = AsyncSirilEventConsumer()
+            # Ensure _task.cancel is a regular Mock, not AsyncMock
+            consumer_instance._task = None
+            return consumer_instance
 
     def test_consumer_initialization(self, consumer):
         assert consumer._running is False
@@ -45,7 +48,9 @@ class TestAsyncSirilEventConsumer:
 
     def test_consumer_stop_when_running(self, consumer):
         consumer._running = True
-        consumer._task = Mock()
+        mock_task = Mock()
+        mock_task.cancel = Mock()  # Ensure cancel is not async
+        consumer._task = mock_task
         consumer._pipe = Mock()
 
         consumer.stop()
@@ -56,7 +61,9 @@ class TestAsyncSirilEventConsumer:
 
     def test_consumer_stop_when_not_running(self, consumer):
         consumer._running = False
-        consumer._task = Mock()
+        mock_task = Mock()
+        mock_task.cancel = Mock()  # Ensure cancel is not async
+        consumer._task = mock_task
         consumer._pipe = Mock()
 
         consumer.stop()
@@ -164,7 +171,10 @@ class TestAsyncSirilCommandProducer:
             mock_instance.write_line = AsyncMock()
             mock_instance.close = Mock()
             mock_pipe_client.return_value = mock_instance
-            return AsyncSirilCommandProducer()
+            producer_instance = AsyncSirilCommandProducer()
+            # Ensure _task.cancel is a regular Mock, not AsyncMock
+            producer_instance._task = None
+            return producer_instance
 
     def test_producer_initialization(self, producer):
         assert producer._running is False
@@ -194,7 +204,9 @@ class TestAsyncSirilCommandProducer:
 
     def test_producer_stop_when_running(self, producer):
         producer._running = True
-        producer._task = Mock()
+        mock_task = Mock()
+        mock_task.cancel = Mock()  # Ensure cancel is not async
+        producer._task = mock_task
         producer._pipe = Mock()
 
         producer.stop()
@@ -206,7 +218,9 @@ class TestAsyncSirilCommandProducer:
 
     def test_producer_stop_when_not_running(self, producer):
         producer._running = False
-        producer._task = Mock()
+        mock_task = Mock()
+        mock_task.cancel = Mock()  # Ensure cancel is not async
+        producer._task = mock_task
         producer._pipe = Mock()
 
         producer.stop()
@@ -364,8 +378,8 @@ class TestIntegrationScenarios:
 
             # Mock pipe to simulate events
             consumer._pipe.connect = AsyncMock()  # type: ignore
-            consumer._pipe.read_line = AsyncMock(
-                side_effect=[  # type: ignore
+            consumer._pipe.read_line = AsyncMock(  # type: ignore
+                side_effect=[
                     "ready",
                     "log: Starting process",
                     "progress: 50",

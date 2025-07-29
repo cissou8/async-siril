@@ -71,3 +71,7 @@ testpaths = [
     "tests",
 ]
 asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::RuntimeWarning:unittest.mock",
+    "ignore:coroutine.*was never awaited:RuntimeWarning",
+]
