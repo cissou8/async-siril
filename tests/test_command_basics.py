@@ -302,8 +302,8 @@ class TestBaseCommand:
     def test_base_command_creation(self):
         command = BaseCommand()
 
-        assert command.name == "BaseCommand"
-        assert command.args == []
+        assert command._name == "BaseCommand"
+        assert command._args == []
         assert command.valid is True
         assert str(command) == "BaseCommand"
 
@@ -314,27 +314,35 @@ class TestBaseCommand:
 
         command = TestCommand()
 
-        assert command.name == "TestCommand"
-        assert command.args == []
+        assert command._name == "TestCommand"
+        assert command._args == []
         assert command.valid is True
         assert str(command) == "TestCommand"
 
-    def test_base_command_with_single_arg(self):
+    def test_base_command_with_single_arg_via_append(self):
         command = BaseCommand()
-        command.args = ["arg1"]
+        arg = CommandArgument("arg1")
+        command.append(arg)
 
+        assert command._args == ["arg1"]
         assert str(command) == "BaseCommand arg1"
 
-    def test_base_command_with_multiple_args(self):
+    def test_base_command_with_multiple_args_via_append(self):
         command = BaseCommand()
-        command.args = ["arg1", "arg2", "arg3"]
+        arg1 = CommandArgument("arg1")
+        arg2 = CommandArgument("arg2")
+        arg3 = CommandArgument("arg3")
+        command.append(arg1)
+        command.append(arg2)
+        command.append(arg3)
 
+        assert command._args == ["arg1", "arg2", "arg3"]
         assert str(command) == "BaseCommand arg1 arg2 arg3"
 
     def test_base_command_with_empty_args_list(self):
         command = BaseCommand()
-        command.args = []
 
+        assert command._args == []
         assert str(command) == "BaseCommand"
 
     def test_base_command_valid_always_true(self):
@@ -343,40 +351,78 @@ class TestBaseCommand:
         # Valid should always return True regardless of args
         assert command.valid is True
 
-        command.args = ["arg1"]
+        arg = CommandArgument("arg1")
+        command.append(arg)
         assert command.valid is True
 
-        command.args = []
-        assert command.valid is True
-
-    def test_base_command_args_list_modification(self):
+    def test_base_command_append_command_argument(self):
         command = BaseCommand()
+        
+        # Test appending valid CommandArgument
+        valid_arg = CommandArgument("test_value")
+        command.append(valid_arg)
+        assert command._args == ["test_value"]
+        
+        # Test appending invalid CommandArgument (should not be added)
+        invalid_arg = CommandArgument(None)
+        command.append(invalid_arg)
+        assert command._args == ["test_value"]  # Should remain unchanged
 
-        # Test that we can modify the args list
-        command.args.append("new_arg")
-        assert command.args == ["new_arg"]
-        assert str(command) == "BaseCommand new_arg"
-
-        command.args.extend(["arg2", "arg3"])
-        assert command.args == ["new_arg", "arg2", "arg3"]
-        assert str(command) == "BaseCommand new_arg arg2 arg3"
-
-    def test_base_command_with_none_args(self):
+    def test_base_command_append_command_flag(self):
         command = BaseCommand()
-        command.args = [None, "valid_arg", None]
+        
+        # Test appending valid CommandFlag
+        valid_flag = CommandFlag("verbose", True)
+        command.append(valid_flag)
+        assert command._args == ["-verbose"]
+        
+        # Test appending invalid CommandFlag (should not be added)
+        invalid_flag = CommandFlag("debug", False)
+        command.append(invalid_flag)
+        assert command._args == ["-verbose"]  # Should remain unchanged
 
-        # BaseCommand with None values in args raises TypeError
-        # This is expected behavior as join() expects strings
-        with pytest.raises(TypeError, match="sequence item 0: expected str instance, NoneType found"):
-            str(command)
-
-    def test_base_command_with_complex_args(self):
+    def test_base_command_append_command_optional(self):
         command = BaseCommand()
+        
+        # Test appending valid CommandOptional
+        valid_optional = CommandOptional("optional_value")
+        command.append(valid_optional)
+        assert command._args == ["optional_value"]
+        
+        # Test appending invalid CommandOptional (should not be added)
+        invalid_optional = CommandOptional(None)
+        command.append(invalid_optional)
+        assert command._args == ["optional_value"]  # Should remain unchanged
 
-        # Test with various argument types that could be string representations
-        command.args = ["arg1", "123", "3.14", "true"]
+    def test_base_command_append_command_option(self):
+        command = BaseCommand()
+        
+        # Test appending valid CommandOption
+        valid_option = CommandOption("output", "result.fits")
+        command.append(valid_option)
+        assert command._args == ["-output=result.fits"]
+        
+        # Test appending invalid CommandOption (should not be added)
+        invalid_option = CommandOption("input", None)
+        command.append(invalid_option)
+        assert command._args == ["-output=result.fits"]  # Should remain unchanged
 
-        assert str(command) == "BaseCommand arg1 123 3.14 true"
+    def test_base_command_append_mixed_types(self):
+        command = BaseCommand()
+        
+        arg = CommandArgument("input.fits")
+        flag = CommandFlag("verbose")
+        option = CommandOption("output", "result.fits")
+        optional = CommandOptional("optional_value")
+        
+        command.append(arg)
+        command.append(flag)
+        command.append(option)
+        command.append(optional)
+        
+        expected_args = ["input.fits", "-verbose", "-output=result.fits", "optional_value"]
+        assert command._args == expected_args
+        assert str(command) == "BaseCommand input.fits -verbose -output=result.fits optional_value"
 
     def test_base_command_inheritance_behavior(self):
         # Test that inheritance works properly
@@ -384,13 +430,14 @@ class TestBaseCommand:
             def __init__(self, custom_arg):
                 super().__init__()
                 self.custom_arg = custom_arg
-                self.args = [custom_arg]
+                arg = CommandArgument(custom_arg)
+                self.append(arg)
 
         command = CustomCommand("custom_value")
 
-        assert command.name == "CustomCommand"
+        assert command._name == "CustomCommand"
         assert command.custom_arg == "custom_value"
-        assert command.args == ["custom_value"]
+        assert command._args == ["custom_value"]
         assert str(command) == "CustomCommand custom_value"
         assert command.valid is True
 
@@ -448,13 +495,15 @@ class TestIntegrationScenarios:
         # Test BaseCommand with different types of arguments
         command = BaseCommand()
 
-        # Simulate how args might be populated with string representations
+        # Simulate how args might be populated with the append method
         arg = CommandArgument("input.fits")
         flag = CommandFlag("verbose")
         option = CommandOption("output", "result.fits")
 
-        # In practice, these would be converted to strings when added to args
-        command.args = [str(arg), str(flag), str(option)]
+        # In practice, these would be added using the append method
+        command.append(arg)
+        command.append(flag)
+        command.append(option)
 
         expected = "BaseCommand input.fits -verbose -output=result.fits"
         assert str(command) == expected

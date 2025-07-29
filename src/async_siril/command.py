@@ -108,13 +108,13 @@ class CommandOption:
 
 class BaseCommand:
     def __init__(self):
-        self.name = type(self).__name__
-        self.args = []
+        self._name = type(self).__name__
+        self._args = []
 
     def __str__(self):
-        result = self.name
-        result += " " if len(self.args) > 0 else ""
-        result += " ".join(self.args)
+        result = self._name
+        result += " " if len(self._args) > 0 else ""
+        result += " ".join(self._args)
         return result
 
     @property
@@ -127,13 +127,13 @@ class BaseCommand:
         _input: t.Union[CommandArgument, CommandFlag, CommandOptional, CommandOption],
     ):
         if isinstance(_input, CommandArgument) and _input.valid:
-            self.args.append(str(_input))
+            self._args.append(str(_input))
         elif isinstance(_input, CommandFlag) and _input.valid:
-            self.args.append(str(_input))
+            self._args.append(str(_input))
         elif isinstance(_input, CommandOptional) and _input.valid:
-            self.args.append(_input.value)
+            self._args.append(_input.value)
         elif isinstance(_input, CommandOption) and _input.valid:
-            self.args.append(str(_input))
+            self._args.append(str(_input))
 
 
 class SequenceFilter:
