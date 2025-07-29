@@ -18,6 +18,12 @@ You can invoke the tests with the Makefile command:
 make test
 ```
 
+Additionally you can check the test coverage with:
+
+```bash
+make test-coverage
+```
+
 ## Checking
 
 Type checking and linting is done with `ruff` and `ty` and can be run with the Makefile command:
