@@ -104,7 +104,7 @@ class stack_norm(Enum):
 
 class stack_rejection(Enum):
     REJECTION_NONE = "n"
-    REJECION_PERCENTILE = "p"
+    REJECTION_PERCENTILE = "p"
     REJECTION_SIGMA = "s"
     REJECTION_MEDIAN = "m"
     REJECTION_WINSORIZED = "w"
