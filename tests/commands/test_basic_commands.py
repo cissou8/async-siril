@@ -21,6 +21,8 @@ from async_siril.command import (
     dumpheader,
     jsonmetadata,
     update_key,
+    sequpdate_key,
+    seqheader,
     parse,
 )
 from async_siril.command_types import SirilSetting, compression_type, fits_extension
@@ -87,6 +89,18 @@ class TestGetCommands:
         cmd = get(variable=SirilSetting.MEM_MODE)
 
         assert str(cmd) == "get core.mem_mode"
+        assert cmd.valid is True
+
+    def test_get_all(self):
+        cmd = get(list_all=True)
+
+        assert str(cmd) == "get -a"
+        assert cmd.valid is True
+
+    def test_get_all_detailed(self):
+        cmd = get(list_all=True, detailed=True)
+
+        assert str(cmd) == "get -A"
         assert cmd.valid is True
 
     def test_getref_basic(self):
@@ -195,8 +209,72 @@ class TestMetadataCommands:
         assert str(cmd) == "update_key KEYWORD value 'This is a comment'"
         assert cmd.valid is True
 
+    def test_update_key_delete_key(self):
+        cmd = update_key("KEYWORD", delete=True)
+
+        assert str(cmd) == "update_key -delete KEYWORD"
+        assert cmd.valid is True
+
+    def test_update_key_modify_key(self):
+        cmd = update_key("KEYWORD", modify=True, new_key="NEW_KEYWORD")
+
+        assert str(cmd) == "update_key -modify KEYWORD NEW_KEYWORD"
+        assert cmd.valid is True
+
+    def test_update_key_comment(self):
+        cmd = update_key("KEYWORD", comment=True, keycomment="This is a comment")
+
+        assert str(cmd) == "update_key -comment 'This is a comment'"
+        assert cmd.valid is True
+
     def test_parse_basic(self):
         cmd = parse("KEYWORD")
 
         assert str(cmd) == "parse KEYWORD"
+        assert cmd.valid is True
+
+
+class TestSequenceMetadataCommands:
+    def test_sequpdate_key_basic(self):
+        cmd = sequpdate_key("sequence", "KEYWORD", value="value")
+
+        assert str(cmd) == "sequpdate_key sequence KEYWORD value"
+        assert cmd.valid is True
+
+    def test_sequpdate_key_with_comment(self):
+        cmd = sequpdate_key("sequence", "KEYWORD", value="value", keycomment="This is a comment")
+
+        assert str(cmd) == "sequpdate_key sequence KEYWORD value 'This is a comment'"
+        assert cmd.valid is True
+
+    def test_sequpdate_key_delete_key(self):
+        cmd = sequpdate_key("sequence", "KEYWORD", delete=True)
+
+        assert str(cmd) == "sequpdate_key sequence -delete KEYWORD"
+        assert cmd.valid is True
+
+    def test_sequpdate_key_modify_key(self):
+        cmd = sequpdate_key("sequence", "KEYWORD", modify=True, new_key="NEW_KEYWORD")
+
+        assert str(cmd) == "sequpdate_key sequence -modify KEYWORD NEW_KEYWORD"
+        assert cmd.valid is True
+
+    def test_sequpdate_key_comment(self):
+        cmd = sequpdate_key("sequence", "KEYWORD", comment=True, keycomment="This is a comment")
+
+        assert str(cmd) == "sequpdate_key sequence -comment 'This is a comment'"
+        assert cmd.valid is True
+
+
+class TestSequenceHeaderCommands:
+    def test_sequence_header_basic(self):
+        cmd = seqheader("sequence", keywords=["KEYWORD"])
+
+        assert str(cmd) == "seqheader sequence KEYWORD"
+        assert cmd.valid is True
+
+    def test_sequence_header_multiple_keywords(self):
+        cmd = seqheader("sequence", keywords=["KEYWORD1", "KEYWORD2"])
+
+        assert str(cmd) == "seqheader sequence KEYWORD1 KEYWORD2"
         assert cmd.valid is True

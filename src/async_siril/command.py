@@ -3304,7 +3304,7 @@ class seqheader(BaseCommand):
         self.append(CommandArgument(sequence))
         for keyword in keywords:
             self.append(CommandArgument(keyword))
-        self.append(CommandOption("sel", selected))
+        self.append(CommandFlag("sel", selected))
         self.append(CommandOption("out", out))
 
 
@@ -3964,6 +3964,7 @@ class sequpdate_key(BaseCommand):
 
     def __init__(
         self,
+        sequence: str,
         key: str,
         new_key: t.Optional[str] = None,
         value: t.Optional[str] = None,
@@ -3973,6 +3974,7 @@ class sequpdate_key(BaseCommand):
         comment: bool = False,
     ):
         super().__init__()
+        self.append(CommandArgument(sequence))
         if value is not None:
             self.append(CommandArgument(key))
             self.append(CommandArgument(value))

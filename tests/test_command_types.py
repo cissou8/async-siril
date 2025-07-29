@@ -1,8 +1,33 @@
 import pytest
 
 from async_siril.command import SequenceFilter, CommandOption, CommandFlag
-from async_siril.command_types import sequence_filter_type
+from async_siril.command_types import sequence_filter_type, Rect, SigmaRange
 
+class TestRect:
+    def test_rect_creation(self):
+        rect = Rect(1, 2, 3, 4)
+
+        assert rect.x == 1
+        assert rect.y == 2
+        assert rect.width == 3
+        assert rect.height == 4
+
+    def test_rect_str(self):
+        rect = Rect(1, 2, 3, 4)
+
+        assert str(rect) == "1 2 3 4"
+
+class TestSigmaRange:
+    def test_sigma_range_creation(self):
+        sigma_range = SigmaRange(1.0, 2.0)
+
+        assert sigma_range.low == 1.0
+        assert sigma_range.high == 2.0
+
+    def test_sigma_range_str(self):
+        sigma_range = SigmaRange(1.0, 2.0)
+
+        assert str(sigma_range) == "1.0 2.0"
 
 class TestSequenceFilter:
     def test_sequence_filter_creation_with_value(self):

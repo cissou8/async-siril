@@ -25,6 +25,7 @@ class Rect:
         return f"{self.x} {self.y} {self.width} {self.height}"
 
 
+@dataclass
 class SigmaRange:
     low: float
     high: float
