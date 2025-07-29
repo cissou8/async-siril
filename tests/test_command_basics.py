@@ -1,4 +1,3 @@
-import pytest
 import enum
 
 from async_siril.command import CommandArgument, CommandFlag, CommandOptional, CommandOption, BaseCommand
@@ -357,12 +356,12 @@ class TestBaseCommand:
 
     def test_base_command_append_command_argument(self):
         command = BaseCommand()
-        
+
         # Test appending valid CommandArgument
         valid_arg = CommandArgument("test_value")
         command.append(valid_arg)
         assert command._args == ["test_value"]
-        
+
         # Test appending invalid CommandArgument (should not be added)
         invalid_arg = CommandArgument(None)
         command.append(invalid_arg)
@@ -370,12 +369,12 @@ class TestBaseCommand:
 
     def test_base_command_append_command_flag(self):
         command = BaseCommand()
-        
+
         # Test appending valid CommandFlag
         valid_flag = CommandFlag("verbose", True)
         command.append(valid_flag)
         assert command._args == ["-verbose"]
-        
+
         # Test appending invalid CommandFlag (should not be added)
         invalid_flag = CommandFlag("debug", False)
         command.append(invalid_flag)
@@ -383,12 +382,12 @@ class TestBaseCommand:
 
     def test_base_command_append_command_optional(self):
         command = BaseCommand()
-        
+
         # Test appending valid CommandOptional
         valid_optional = CommandOptional("optional_value")
         command.append(valid_optional)
         assert command._args == ["optional_value"]
-        
+
         # Test appending invalid CommandOptional (should not be added)
         invalid_optional = CommandOptional(None)
         command.append(invalid_optional)
@@ -396,12 +395,12 @@ class TestBaseCommand:
 
     def test_base_command_append_command_option(self):
         command = BaseCommand()
-        
+
         # Test appending valid CommandOption
         valid_option = CommandOption("output", "result.fits")
         command.append(valid_option)
         assert command._args == ["-output=result.fits"]
-        
+
         # Test appending invalid CommandOption (should not be added)
         invalid_option = CommandOption("input", None)
         command.append(invalid_option)
@@ -409,17 +408,17 @@ class TestBaseCommand:
 
     def test_base_command_append_mixed_types(self):
         command = BaseCommand()
-        
+
         arg = CommandArgument("input.fits")
         flag = CommandFlag("verbose")
         option = CommandOption("output", "result.fits")
         optional = CommandOptional("optional_value")
-        
+
         command.append(arg)
         command.append(flag)
         command.append(option)
         command.append(optional)
-        
+
         expected_args = ["input.fits", "-verbose", "-output=result.fits", "optional_value"]
         assert command._args == expected_args
         assert str(command) == "BaseCommand input.fits -verbose -output=result.fits optional_value"
