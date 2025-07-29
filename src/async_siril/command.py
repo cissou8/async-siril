@@ -1263,11 +1263,14 @@ class get(BaseCommand):
         self,
         list_all: bool = False,
         detailed: bool = False,
-        variable: t.Optional[str] = None,
+        variable: t.Optional[str | SirilSetting] = None,
     ):
         super().__init__()
         if variable is not None:
-            self.append(CommandArgument(variable))
+            if isinstance(variable, SirilSetting):
+                self.append(CommandArgument(variable.value))
+            else:
+                self.append(CommandArgument(variable))
         elif list_all and not detailed:
             self.append(CommandFlag("a", list_all))
         elif list_all and detailed:
@@ -4026,7 +4029,7 @@ class set(BaseCommand):
         self,
         import_file: t.Optional[str] = None,
         key: t.Optional[str | SirilSetting] = None,
-        value: t.Optional[str | bool] = None,
+        value: t.Optional[str | bool | int | float] = None,
     ):
         super().__init__()
         if import_file is not None:
