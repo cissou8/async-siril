@@ -59,7 +59,7 @@ class CommandArgument:
 
     def __str__(self):
         if not self.valid:
-            return None
+            return ""
         if isinstance(self.value, str) and (" " in self.value):
             return f"'{self.value}'"
         elif isinstance(self.value, enum.Enum):
@@ -97,7 +97,7 @@ class CommandOption:
 
     def __str__(self):
         if not self.valid:
-            return None
+            return ""
         if isinstance(self.value, str) and (" " in self.value):
             return f"'-{self.name}={self.value}'"
         elif isinstance(self.value, enum.Enum):
