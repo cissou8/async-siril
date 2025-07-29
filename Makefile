@@ -14,6 +14,9 @@ publish:
 test:
 	uv run pytest
 
+test-coverage:
+	uv run pytest --cov=src/async_siril --cov-report=term-missing --cov-report=html
+
 check:
 	uv run ruff check
 	@echo ""
