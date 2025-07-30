@@ -1178,8 +1178,8 @@ class fixbanding(BaseCommand):
 
     def __init__(
         self,
-        amount: int,
-        sigma: int,
+        amount: float,
+        sigma: float,
         vertical: bool = False,
     ):
         super().__init__()
@@ -1560,9 +1560,9 @@ class invmtf(BaseCommand):
         channels: t.Optional[str] = None,
     ):
         super().__init__()
-        self.append(CommandOption("low", low))
-        self.append(CommandOption("mid", mid))
-        self.append(CommandOption("high", high))
+        self.append(CommandArgument(low))
+        self.append(CommandArgument(mid))
+        self.append(CommandArgument(high))
         if channels is not None:
             self.append(CommandArgument(channels))
 
