@@ -1,4 +1,20 @@
-from async_siril.command import trixel, thresh, threshhi, threshlo, stat, seqstat, histo, bg, bgnoise, binxy
+from async_siril.command import (
+    trixel,
+    thresh,
+    threshhi,
+    threshlo,
+    stat,
+    seqstat,
+    histo,
+    bg,
+    bgnoise,
+    binxy,
+    light_curve,
+    profile,
+    psf,
+    seqprofile,
+    seqpsf,
+)
 from async_siril.command_types import Channel, stat_detail
 
 
@@ -99,4 +115,39 @@ class TestTrixelCommand:
     def test_trixel_print(self):
         cmd = trixel(p=True)
         assert str(cmd) == "trixel -p"
+        assert cmd.valid is True
+
+
+class TestLightCurveCommand:
+    def test_light_curve_basic(self):
+        cmd = light_curve("sequence", "output_file")
+        assert str(cmd) == "light_curve sequence output_file"
+        assert cmd.valid is True
+
+
+class TestProfileCommand:
+    def test_profile_basic(self):
+        cmd = profile((1, 2), (3, 4))
+        assert str(cmd) == "profile -from=1,2 -to=3,4"
+        assert cmd.valid is True
+
+
+class TestPsfCommand:
+    def test_psf_basic(self):
+        cmd = psf("R")
+        assert str(cmd) == "psf R"
+        assert cmd.valid is True
+
+
+class TestSeqProfileCommand:
+    def test_seqprofile_basic(self):
+        cmd = seqprofile("sequence", (1, 2), (3, 4))
+        assert str(cmd) == "seqprofile sequence -from=1,2 -to=3,4"
+        assert cmd.valid is True
+
+
+class TestSeqPsfCommand:
+    def test_seqpsf_basic(self):
+        cmd = seqpsf("sequence", "R")
+        assert str(cmd) == "seqpsf sequence R"
         assert cmd.valid is True

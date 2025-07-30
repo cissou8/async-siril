@@ -8,6 +8,7 @@ from async_siril.command import (
     rotatePi,
     select,
     seqcrop,
+    merge_cfa,
 )
 from async_siril.command_types import Rect, pixel_interpolation
 
@@ -117,4 +118,11 @@ class TestSeqCropCommand:
     def test_seqcrop_prefix(self):
         cmd = seqcrop("sequence", Rect(0, 0, 10, 10), prefix="prefix")
         assert str(cmd) == "seqcrop sequence '0 0 10 10' -prefix=prefix"
+        assert cmd.valid is True
+
+
+class TestMergeCFACommand:
+    def test_merge_cfa_basic(self):
+        cmd = merge_cfa("file_CFA0", "file_CFA1", "file_CFA2", "file_CFA3", "bayerpattern")
+        assert str(cmd) == "merge_cfa file_CFA0 file_CFA1 file_CFA2 file_CFA3 bayerpattern"
         assert cmd.valid is True

@@ -7,8 +7,9 @@ from async_siril.command import (
     seqextract_Ha,
     seqextract_HaOIII,
     unpurple,
+    rmgreen,
 )
-from async_siril.command_types import extract_resample
+from async_siril.command_types import extract_resample, rmgreen_protection
 
 
 class TestExtractCommands:
@@ -110,4 +111,18 @@ class TestUnpurpleCommands:
         cmd = unpurple(blue=1.2, thresh=0.8)
 
         assert str(cmd) == "unpurple -blue=1.2 -thresh=0.8"
+        assert cmd.valid is True
+
+
+class TestRmGreenCommand:
+    def test_rm_green_basic(self):
+        cmd = rmgreen()
+
+        assert str(cmd) == "rmgreen"
+        assert cmd.valid is True
+
+    def test_rm_green_protection(self):
+        cmd = rmgreen(protection=rmgreen_protection.ADDITIVE_MASK, amount=1.2)
+
+        assert str(cmd) == "rmgreen 3 1.2"
         assert cmd.valid is True

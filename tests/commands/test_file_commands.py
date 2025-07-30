@@ -1,4 +1,18 @@
-from async_siril.command import load, save, savebmp, savejpg, savejxl, savepng, savepnm, savetif, savetif32, savetif8
+from async_siril.command import (
+    load,
+    save,
+    savebmp,
+    savejpg,
+    savejxl,
+    savepng,
+    savepnm,
+    savetif,
+    savetif32,
+    savetif8,
+    convert,
+    convertraw,
+    merge,
+)
 
 
 class TestLoadCommand:
@@ -95,4 +109,46 @@ class TestSaveCommands:
         cmd = savetif8("output.tif")
 
         assert str(cmd) == "savetif8 output.tif"
+        assert cmd.valid is True
+
+
+class TestConvertCommand:
+    def test_convert_basic(self):
+        cmd = convert("output.fits")
+
+        assert str(cmd) == "convert output.fits"
+        assert cmd.valid is True
+
+    def test_convert_with_path_spaces(self):
+        cmd = convert("path with spaces/output.fits")
+
+        assert str(cmd) == "convert 'path with spaces/output.fits'"
+        assert cmd.valid is True
+
+
+class TestConvertrawCommand:
+    def test_convertraw_basic(self):
+        cmd = convertraw("output.fits")
+
+        assert str(cmd) == "convertraw output.fits"
+        assert cmd.valid is True
+
+    def test_convertraw_with_path_spaces(self):
+        cmd = convertraw("path with spaces/output.fits")
+
+        assert str(cmd) == "convertraw 'path with spaces/output.fits'"
+        assert cmd.valid is True
+
+
+class TestMergeCommand:
+    def test_merge_basic(self):
+        cmd = merge("sequence1", "sequence2", "output_sequence")
+
+        assert str(cmd) == "merge sequence1 sequence2 output_sequence"
+        assert cmd.valid is True
+
+    def test_merge_additional(self):
+        cmd = merge("sequence1", "sequence2", "output_sequence", additional_sequences=["additional1", "additional2"])
+
+        assert str(cmd) == "merge sequence1 sequence2 additional1 additional2 output_sequence"
         assert cmd.valid is True

@@ -24,6 +24,7 @@ from async_siril.command import (
     sequpdate_key,
     seqheader,
     parse,
+    pyscript,
 )
 from async_siril.command_types import SirilSetting, compression_type, fits_extension
 
@@ -87,6 +88,12 @@ class TestSetCommands:
 class TestGetCommands:
     def test_get_basic(self):
         cmd = get(variable=SirilSetting.MEM_MODE)
+
+        assert str(cmd) == "get core.mem_mode"
+        assert cmd.valid is True
+
+    def test_get_basic_string(self):
+        cmd = get(variable="core.mem_mode")
 
         assert str(cmd) == "get core.mem_mode"
         assert cmd.valid is True
@@ -277,4 +284,11 @@ class TestSequenceHeaderCommands:
         cmd = seqheader("sequence", keywords=["KEYWORD1", "KEYWORD2"])
 
         assert str(cmd) == "seqheader sequence KEYWORD1 KEYWORD2"
+        assert cmd.valid is True
+
+
+class TestPyScriptCommand:
+    def test_pyscript_basic(self):
+        cmd = pyscript("script.py")
+        assert str(cmd) == "pyscript script.py"
         assert cmd.valid is True

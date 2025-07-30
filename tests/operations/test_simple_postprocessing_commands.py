@@ -81,12 +81,6 @@ def test_seqplatesolve():
     assert _command.valid
 
 
-def test_rmgreen():
-    _command = command.rmgreen()
-    assert str(_command) == "rmgreen"
-    assert _command.valid
-
-
 def test_saturation():
     _command = command.satu(1.5, 0.5, saturation_hue_range.ALL)
     assert str(_command) == "satu 1.5 0.5 6"

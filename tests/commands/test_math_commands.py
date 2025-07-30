@@ -1,19 +1,6 @@
 import pytest
-from async_siril.command import (
-    fdiv,
-    ffill,
-    fmul,
-    fmedian,
-    fill,
-    idiv,
-    imul,
-    isub,
-    iadd,
-    pm,
-    offset,
-    nozero,
-)
-from async_siril.command_types import Rect
+from async_siril.command import fdiv, ffill, fmul, fmedian, fill, idiv, imul, isub, iadd, pm, offset, nozero, limit
+from async_siril.command_types import Rect, limit_option
 
 
 class TestFdivCommand:
@@ -128,4 +115,11 @@ class TestNozeroCommand:
     def test_nozero_basic(self):
         cmd = nozero(2)
         assert str(cmd) == "nozero 2"
+        assert cmd.valid is True
+
+
+class TestLimitCommand:
+    def test_limit_basic(self):
+        cmd = limit(limit_option.CLIP)
+        assert str(cmd) == "limit -clip"
         assert cmd.valid is True
