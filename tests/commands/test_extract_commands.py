@@ -6,6 +6,7 @@ from async_siril.command import (
     seqextract_Green,
     seqextract_Ha,
     seqextract_HaOIII,
+    unpurple,
 )
 from async_siril.command_types import extract_resample
 
@@ -89,4 +90,24 @@ class TestSequenceExtractCommands:
         cmd = seqextract_HaOIII("sequence", resample=extract_resample.HA)
 
         assert str(cmd) == "seqextract_HaOIII sequence -resample=ha"
+        assert cmd.valid is True
+
+
+class TestUnpurpleCommands:
+    def test_unpurple_basic(self):
+        cmd = unpurple()
+
+        assert str(cmd) == "unpurple"
+        assert cmd.valid is True
+
+    def test_unpurple_starmask(self):
+        cmd = unpurple(starmask=True)
+
+        assert str(cmd) == "unpurple -starmask"
+        assert cmd.valid is True
+
+    def test_unpurple_blue_threshold(self):
+        cmd = unpurple(blue=1.2, thresh=0.8)
+
+        assert str(cmd) == "unpurple -blue=1.2 -thresh=0.8"
         assert cmd.valid is True

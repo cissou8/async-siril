@@ -18,7 +18,7 @@ Async Siril is an asyncio based python wrapper around [Siril 1.4.0](https://www.
 * minimal dependencies (`asyncio`, `structlog`, `psutil`, `attrs`)
 * Linux, Mac, & Windows support
 * Docker support (see [Dockerfile.siril](./Dockerfile.siril))
-* 66% test coverage 
+* 70% test coverage 
 
 ## Requirements
 

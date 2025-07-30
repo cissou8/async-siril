@@ -301,8 +301,9 @@ class boxselect(BaseCommand):
         rect: t.Optional[Rect] = None,
     ):
         super().__init__()
-        self.append(CommandFlag("clear", clear))
-        if rect is not None:
+        if clear:
+            self.append(CommandFlag("clear", clear))
+        elif rect is not None:
             self.append(CommandArgument(str(rect)))
 
 
@@ -1204,6 +1205,9 @@ class fmedian(BaseCommand):
         modulation: float,
     ):
         super().__init__()
+        # Error if ksize is even
+        if ksize % 2 == 0:
+            raise ValueError("ksize must be odd")
         self.append(CommandArgument(ksize))
         self.append(CommandArgument(modulation))
 
