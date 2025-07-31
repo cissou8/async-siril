@@ -1,6 +1,18 @@
 import async_siril.command as command
 
 
+class TestAutostretchCommand:
+    def test_autostretch(self):
+        cmd = command.autostretch(linked=True, target_background=0.15, shadows_clipping=-10)
+        assert str(cmd) == "autostretch -linked -10 0.15"
+        assert cmd.valid
+
+    def test_autostretch_default(self):
+        cmd = command.autostretch()
+        assert str(cmd) == "autostretch"
+        assert cmd.valid
+
+
 class TestAutoghsCommand:
     def test_autoghs_basic(self):
         cmd = command.autoghs(1, 2)
@@ -74,3 +86,15 @@ class TestSeqMtfCommand:
         cmd = command.seqmtf("sequence", 1.2, 2.2, 3.5)
         assert str(cmd) == "seqmtf sequence 1.2 2.2 3.5"
         assert cmd.valid is True
+
+
+class TestAsinhCommand:
+    def test_asinh(self):
+        _command = command.asinh(100)
+        assert str(_command) == "asinh 100"
+        assert _command.valid
+
+    def test_asinh_all(self):
+        _command = command.asinh(100, True, 0.001)
+        assert str(_command) == "asinh -human 100 0.001"
+        assert _command.valid

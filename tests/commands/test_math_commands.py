@@ -123,3 +123,10 @@ class TestLimitCommand:
         cmd = command.limit(ct.limit_option.CLIP)
         assert str(cmd) == "limit -clip"
         assert cmd.valid is True
+
+
+class TestNegCommand:
+    def test_neg(self):
+        _command = command.neg()
+        assert str(_command) == "neg"
+        assert _command.valid

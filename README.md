@@ -3,6 +3,7 @@
 [![image](https://img.shields.io/pypi/l/async-siril.svg)](https://pypi.python.org/pypi/async-siril)
 [![image](https://img.shields.io/pypi/pyversions/async-siril.svg)](https://pypi.python.org/pypi/async-siril)
 [![Actions status](https://github.com/KyleLeNeau/async-siril/actions/workflows/ci.yml/badge.svg)](https://github.com/KyleLeNeau/async-siril/actions)
+![Static Badge](https://img.shields.io/badge/coverage-93%25-brightgreen)
 
 # async-siril
 

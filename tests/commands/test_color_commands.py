@@ -1,4 +1,5 @@
 import async_siril.command as command
+import async_siril.command_types as ct
 import pytest
 
 
@@ -6,6 +7,11 @@ class TestPccCommand:
     def test_pcc_basic(self):
         _command = command.pcc()
         assert str(_command) == "pcc"
+        assert _command.valid
+
+    def test_pcc_with_ps(self):
+        _command = command.pcc(catalog=ct.star_catalog.GAIA)
+        assert str(_command) == "pcc -catalog=gaia"
         assert _command.valid
 
 
@@ -106,4 +112,11 @@ class TestIccConvertToCommand:
     def test_icc_convert_to_basic(self):
         _command = command.icc_convert_to("profile")
         assert str(_command) == "icc_convert_to profile"
+        assert _command.valid
+
+
+class TestSaturationCommand:
+    def test_saturation(self):
+        _command = command.satu(1.5, 0.5, ct.saturation_hue_range.ALL)
+        assert str(_command) == "satu 1.5 0.5 6"
         assert _command.valid

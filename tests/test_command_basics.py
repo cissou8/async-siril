@@ -1,6 +1,6 @@
 import enum
 
-from async_siril.command import CommandArgument, CommandFlag, CommandOptional, CommandOption, BaseCommand
+from async_siril.command import CommandArgument, CommandFlag, CommandOption, BaseCommand
 from async_siril.command_types import stack_rejection, fits_extension
 
 
@@ -147,56 +147,6 @@ class TestCommandFlag:
         assert flag_true.valid is True
         assert flag_false.valid is False
         assert flag_none.valid is False
-
-
-class TestCommandOptional:
-    def test_command_optional_creation_with_value(self):
-        opt = CommandOptional("test_value")
-
-        assert opt.value == "test_value"
-        assert opt.valid is True
-        assert str(opt) == "test_value"
-
-    def test_command_optional_creation_with_none(self):
-        opt = CommandOptional(None)
-
-        assert opt.value is None
-        assert opt.valid is False
-        assert str(opt) == ""
-
-    def test_command_optional_inherits_from_command_argument(self):
-        opt = CommandOptional("value with spaces")
-
-        # Should behave like CommandArgument for strings with spaces
-        assert str(opt) == "'value with spaces'"
-
-    def test_command_optional_with_enum(self):
-        opt = CommandOptional(ExampleEnum.VALUE_TWO)
-
-        assert opt.value == ExampleEnum.VALUE_TWO
-        assert opt.valid is True
-        assert str(opt) == "two"
-
-    def test_command_optional_with_number(self):
-        opt = CommandOptional(123)
-
-        assert opt.value == 123
-        assert opt.valid is True
-        assert str(opt) == "123"
-
-    def test_command_optional_with_zero(self):
-        opt = CommandOptional(0)
-
-        assert opt.value == 0
-        assert opt.valid is True
-        assert str(opt) == "0"
-
-    def test_command_optional_with_false(self):
-        opt = CommandOptional(False)
-
-        assert opt.value is False
-        assert opt.valid is True
-        assert str(opt) == "False"
 
 
 class TestCommandOption:
@@ -380,19 +330,6 @@ class TestBaseCommand:
         command.append(invalid_flag)
         assert command._args == ["-verbose"]  # Should remain unchanged
 
-    def test_base_command_append_command_optional(self):
-        command = BaseCommand()
-
-        # Test appending valid CommandOptional
-        valid_optional = CommandOptional("optional_value")
-        command.append(valid_optional)
-        assert command._args == ["optional_value"]
-
-        # Test appending invalid CommandOptional (should not be added)
-        invalid_optional = CommandOptional(None)
-        command.append(invalid_optional)
-        assert command._args == ["optional_value"]  # Should remain unchanged
-
     def test_base_command_append_command_option(self):
         command = BaseCommand()
 
@@ -412,16 +349,14 @@ class TestBaseCommand:
         arg = CommandArgument("input.fits")
         flag = CommandFlag("verbose")
         option = CommandOption("output", "result.fits")
-        optional = CommandOptional("optional_value")
 
         command.append(arg)
         command.append(flag)
         command.append(option)
-        command.append(optional)
 
-        expected_args = ["input.fits", "-verbose", "-output=result.fits", "optional_value"]
+        expected_args = ["input.fits", "-verbose", "-output=result.fits"]
         assert command._args == expected_args
-        assert str(command) == "BaseCommand input.fits -verbose -output=result.fits optional_value"
+        assert str(command) == "BaseCommand input.fits -verbose -output=result.fits"
 
     def test_base_command_inheritance_behavior(self):
         # Test that inheritance works properly
@@ -447,13 +382,11 @@ class TestIntegrationScenarios:
         arg = CommandArgument("test_value")
         flag = CommandFlag("verbose")
         option = CommandOption("output", "result.fits")
-        optional = CommandOptional("optional_value")
 
         # Test their string representations
         assert str(arg) == "test_value"
         assert str(flag) == "-verbose"
         assert str(option) == "-output=result.fits"
-        assert str(optional) == "optional_value"
 
     def test_command_objects_validity(self):
         # Test validity across different objects
@@ -463,8 +396,6 @@ class TestIntegrationScenarios:
         invalid_flag = CommandFlag("flag", False)
         valid_option = CommandOption("opt", "value")
         invalid_option = CommandOption("opt", None)
-        valid_optional = CommandOptional("value")
-        invalid_optional = CommandOptional(None)
 
         assert valid_arg.valid is True
         assert invalid_arg.valid is False
@@ -472,8 +403,6 @@ class TestIntegrationScenarios:
         assert invalid_flag.valid is False
         assert valid_option.valid is True
         assert invalid_option.valid is False
-        assert valid_optional.valid is True
-        assert invalid_optional.valid is False
 
     def test_edge_case_string_representations(self):
         # Test edge cases for string representations

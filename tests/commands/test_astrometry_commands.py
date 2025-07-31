@@ -56,3 +56,27 @@ class TestSetPhotCommand:
         cmd = command.setphot()
         assert str(cmd) == "setphot"
         assert cmd.valid is True
+
+
+class TestSetFindstarCommand:
+    def test_setfindstar_sigma(self):
+        cmd = command.setfindstar(sigma=4)
+        assert str(cmd) == "setfindstar -sigma=4"
+        assert cmd.valid
+
+    def test_setfindstar_many(self):
+        cmd = command.setfindstar(reset=True, sigma=3, focal=3960, pixsize=5.4, roundness=0.7, moffat=True, relax=False)
+        assert str(cmd) == "setfindstar reset -sigma=3 -roundness=0.7 -focal=3960 -pixelsize=5.4 -moffat -relax=off"
+        assert cmd.valid
+
+
+class TestFindStarCommand:
+    def test_findstar(self):
+        _command = command.findstar(out="stars.lst", layer=1)
+        assert str(_command) == "findstar -out=stars.lst -layer=1"
+        assert _command.valid
+
+    def test_seqfindstar(self):
+        _command = command.seqfindstar("the_sequence", 1, 1500)
+        assert str(_command) == "seqfindstar the_sequence -layer=1 -maxstars=1500"
+        assert _command.valid

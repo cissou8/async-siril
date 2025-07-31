@@ -81,11 +81,6 @@ class CommandFlag:
         return f"-{self.name}"
 
 
-class CommandOptional(CommandArgument):
-    def __init__(self, value: t.Optional[t.Any]):
-        super().__init__(value)
-
-
 class CommandOption:
     def __init__(self, name: str, value: t.Optional[t.Any]):
         self.name = name
@@ -124,14 +119,12 @@ class BaseCommand:
 
     def append(
         self,
-        _input: t.Union[CommandArgument, CommandFlag, CommandOptional, CommandOption],
+        _input: t.Union[CommandArgument, CommandFlag, CommandOption],
     ):
         if isinstance(_input, CommandArgument) and _input.valid:
             self._args.append(str(_input))
         elif isinstance(_input, CommandFlag) and _input.valid:
             self._args.append(str(_input))
-        elif isinstance(_input, CommandOptional) and _input.valid:
-            self._args.append(_input.value)
         elif isinstance(_input, CommandOption) and _input.valid:
             self._args.append(str(_input))
 
@@ -2748,7 +2741,8 @@ class savejpg(BaseCommand):
     def __init__(self, filename: str, quality: t.Optional[int] = None):
         super().__init__()
         self.append(CommandArgument(filename))
-        self.append(CommandOptional(quality))
+        if quality is not None:
+            self.append(CommandArgument(quality))
 
 
 class savejxl(BaseCommand):
@@ -3050,7 +3044,8 @@ class seqcosme(BaseCommand):
     def __init__(self, sequencename: str, filename: t.Optional[str] = None, prefix: t.Optional[str] = None):
         super().__init__()
         self.append(CommandArgument(sequencename))
-        self.append(CommandOptional(filename))
+        if filename is not None:
+            self.append(CommandArgument(filename))
         self.append(CommandOption("prefix", prefix))
 
 
@@ -3070,7 +3065,8 @@ class seqcosme_cfa(BaseCommand):
     def __init__(self, sequencename: str, filename: t.Optional[str] = None, prefix: t.Optional[str] = None):
         super().__init__()
         self.append(CommandArgument(sequencename))
-        self.append(CommandOptional(filename))
+        if filename is not None:
+            self.append(CommandArgument(filename))
         self.append(CommandOption("prefix", prefix))
 
 

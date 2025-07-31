@@ -1,15 +1,5 @@
 import async_siril.command as command
 
-#  Sequence-Only Operations:
-#   - seqclean
-#   - seqmerge_cfa
-#   - seqmodasinh + seqinvmodasinh
-#   - seqpsf
-#   - seqresample
-#   - seqrl
-#   - seqsplit_cfa
-#   - seqtilt
-
 
 class TestSeqCleanCommand:
     def test_seqclean_basic(self):

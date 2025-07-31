@@ -1,5 +1,6 @@
 import async_siril.command as command
 import async_siril.command_types as ct
+import pytest
 
 
 class TestBoxSelectCommand:
@@ -129,3 +130,24 @@ class TestFFTICommand:
         cmd = command.ffti("1", "2")
         assert str(cmd) == "ffti 1 2"
         assert cmd.valid is True
+
+class TestSplitCommand:
+    def test_split(self):
+        _command = command.split("r", "g", "b")
+        assert str(_command) == "split r g b"
+        assert _command.valid
+
+class TestResampleCommand:
+    def test_resample_ratio(self):
+        _command = command.resample(factor=0.4)
+        assert str(_command) == "resample 0.4"
+        assert _command.valid
+
+    def test_resample_target(self):
+        _command = command.resample(target_height=400, interp=ct.pixel_interpolation.INTERP_AREA)
+        assert str(_command) == "resample -height=400 -interp=area"
+        assert _command.valid
+
+    def test_resample_2targets(self):
+        with pytest.raises(ValueError):
+            command.resample(target_height=800, target_width=600)
