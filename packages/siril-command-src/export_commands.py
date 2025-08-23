@@ -191,8 +191,8 @@ class ExportSirilCommands:
         doc_string = "".join(f"    {line}\n" for line in doc_lines)
 
         return f"""class {class_name}(BaseCommand):
-    \"\"\"
-{doc_string.rstrip()}
+    r\"\"\"
+{"\n".join(line.rstrip() for line in doc_string.rstrip().split("\n"))}
     \"\"\"
 """
 

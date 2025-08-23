@@ -159,7 +159,7 @@ class SequenceFilter:
 
 
 class asinh(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         asinh [-human] stretch { [offset] [-clipmode=] }
@@ -183,7 +183,7 @@ class asinh(BaseCommand):
 
 
 class autoghs(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         autoghs [-linked] shadowsclip stretchamount [-b=] [-hp=] [-lp=] [-clipmode=]
@@ -213,7 +213,7 @@ class autoghs(BaseCommand):
 
 
 class autostretch(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         autostretch [-linked] [shadowsclip [targetbg]]
@@ -238,7 +238,7 @@ class autostretch(BaseCommand):
 
 
 class bg(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         bg
@@ -248,7 +248,7 @@ class bg(BaseCommand):
 
 
 class bgnoise(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         bgnoise
@@ -261,7 +261,7 @@ class bgnoise(BaseCommand):
 
 
 class binxy(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         binxy coefficient [-sum]
@@ -280,7 +280,7 @@ class binxy(BaseCommand):
 
 
 class boxselect(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         boxselect [-clear] [x y width height]
@@ -301,7 +301,7 @@ class boxselect(BaseCommand):
 
 
 class calibrate(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         calibrate sequencename [-bias=filename] [-dark=filename] [-flat=filename] [-cc=dark [siglo sighi] || -cc=bpm bpmfile] [-cfa] [-debayer] [-fix_xtrans] [-equalize_cfa] [-opt[=exp]] [-all] [-prefix=] [-fitseq]
@@ -364,7 +364,7 @@ class calibrate(BaseCommand):
 
 
 class calibrate_single(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         calibrate_single imagename [-bias=filename] [-dark=filename] [-flat=filename] [-cc=dark [siglo sighi] || -cc=bpm bpmfile] [-cfa] [-debayer] [-fix_xtrans] [-equalize_cfa] [-opt[=exp]] [-prefix=]
@@ -422,7 +422,7 @@ class calibrate_single(BaseCommand):
 
 
 class capabilities(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         capabilities
@@ -432,7 +432,7 @@ class capabilities(BaseCommand):
 
 
 class catsearch(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         catsearch name
@@ -447,7 +447,7 @@ class catsearch(BaseCommand):
 
 
 class ccm(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         ccm m00 m01 m02 m10 m11 m12 m20 m21 m22 [gamma]
@@ -497,7 +497,7 @@ class ccm(BaseCommand):
 
 
 class cd(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         cd directory
@@ -513,7 +513,7 @@ class cd(BaseCommand):
 
 
 class cdg(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         cdg
@@ -523,7 +523,7 @@ class cdg(BaseCommand):
 
 
 class clahe(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         clahe cliplimit tileSize
@@ -541,7 +541,7 @@ class clahe(BaseCommand):
 
 
 class close(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         close
@@ -551,7 +551,7 @@ class close(BaseCommand):
 
 
 class conesearch(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         conesearch [limit_magnitude] [-cat=] [-phot] [-obscode=] [-tag={on|off}] [-log={on|off}] [-trix=] [-out=]
@@ -601,7 +601,7 @@ class conesearch(BaseCommand):
 
 
 class convert(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         convert basename [-debayer] [-fitseq] [-ser] [-start=index] [-out=]
@@ -635,7 +635,7 @@ class convert(BaseCommand):
 
 
 class convertraw(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         convertraw basename [-debayer] [-fitseq] [-ser] [-start=index] [-out=]
@@ -664,7 +664,7 @@ class convertraw(BaseCommand):
 
 
 class cosme(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         cosme [filename].lst
@@ -686,7 +686,7 @@ class cosme(BaseCommand):
 
 
 class cosme_cfa(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         cosme_cfa [filename].lst
@@ -702,7 +702,7 @@ class cosme_cfa(BaseCommand):
 
 
 class crop(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         crop [x y width height]
@@ -724,7 +724,7 @@ class crop(BaseCommand):
 
 
 class denoise(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         denoise [-nocosmetic] [-mod=m] [ -vst | -da3d | -sos=n [-rho=r] ] [-indep]
@@ -773,7 +773,7 @@ class denoise(BaseCommand):
 
 
 class dumpheader(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         dumpheader
@@ -783,7 +783,7 @@ class dumpheader(BaseCommand):
 
 
 class entropy(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         entropy
@@ -793,7 +793,7 @@ class entropy(BaseCommand):
 
 
 class epf(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         epf [-guided] [-d=] [-si=] [-ss=] [-mod=] [-guideimage=]
@@ -826,7 +826,7 @@ class epf(BaseCommand):
 
 
 class exit(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         exit
@@ -836,7 +836,7 @@ class exit(BaseCommand):
 
 
 class extract(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         extract NbPlans
@@ -856,7 +856,7 @@ class extract(BaseCommand):
 
 
 class extract_Green(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         extract_Green
@@ -866,7 +866,7 @@ class extract_Green(BaseCommand):
 
 
 class extract_Ha(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         extract_Ha [-upscale]
@@ -883,7 +883,7 @@ class extract_Ha(BaseCommand):
 
 
 class extract_HaOIII(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         extract_HaOIII [-resample=]
@@ -902,7 +902,7 @@ class extract_HaOIII(BaseCommand):
 
 
 class fdiv(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         fdiv filename scalar
@@ -923,7 +923,7 @@ class fdiv(BaseCommand):
 
 
 class ffill(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         ffill value [x y width height]
@@ -945,7 +945,7 @@ class ffill(BaseCommand):
 
 
 class fftd(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         fftd modulus phase
@@ -964,7 +964,7 @@ class fftd(BaseCommand):
 
 
 class ffti(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         ffti modulus phase
@@ -983,7 +983,7 @@ class ffti(BaseCommand):
 
 
 class fill(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         fill value [x y width height]
@@ -1003,7 +1003,7 @@ class fill(BaseCommand):
 
 
 class find_cosme(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         find_cosme cold_sigma hot_sigma
@@ -1022,7 +1022,7 @@ class find_cosme(BaseCommand):
 
 
 class find_cosme_cfa(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         find_cosme_cfa cold_sigma hot_sigma
@@ -1043,7 +1043,7 @@ class find_cosme_cfa(BaseCommand):
 
 
 class find_hot(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         find_hot filename cold_sigma hot_sigma
@@ -1070,7 +1070,7 @@ class find_hot(BaseCommand):
 
 
 class findcompstars(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         findcompstars star_name [-narrow|-wide] [-catalog={nomad|apass}] [-dvmag=3] [-dbv=0.5] [-emag=0.03] [-out=nina_file.csv]
@@ -1114,7 +1114,7 @@ class findcompstars(BaseCommand):
 
 
 class findstar(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         findstar [-out=] [-layer=] [-maxstars=]
@@ -1146,7 +1146,7 @@ class findstar(BaseCommand):
 
 
 class fix_xtrans(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         fix_xtrans
@@ -1158,7 +1158,7 @@ class fix_xtrans(BaseCommand):
 
 
 class fixbanding(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         fixbanding amount sigma [-vertical]
@@ -1182,7 +1182,7 @@ class fixbanding(BaseCommand):
 
 
 class fmedian(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         fmedian ksize modulation
@@ -1206,7 +1206,7 @@ class fmedian(BaseCommand):
 
 
 class fmul(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         fmul scalar
@@ -1223,7 +1223,7 @@ class fmul(BaseCommand):
 
 
 class gauss(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         gauss sigma
@@ -1244,7 +1244,7 @@ class gauss(BaseCommand):
 
 
 class get(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         get { -a | -A | variable }
@@ -1275,7 +1275,7 @@ class get(BaseCommand):
 
 
 class getref(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         getref sequencename
@@ -1292,7 +1292,7 @@ class getref(BaseCommand):
 
 
 class ght(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         ght -D= [-B=] [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels]
@@ -1333,7 +1333,7 @@ class ght(BaseCommand):
 
 
 class grey_flat(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         grey_flat
@@ -1343,7 +1343,7 @@ class grey_flat(BaseCommand):
 
 
 class help(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         help [command]
@@ -1358,7 +1358,7 @@ class help(BaseCommand):
 
 
 class histo(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         histo channel (channel=0, 1, 2 with 0: red, 1: green, 2: blue)
@@ -1374,7 +1374,7 @@ class histo(BaseCommand):
 
 
 class iadd(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         iadd filename
@@ -1389,7 +1389,7 @@ class iadd(BaseCommand):
 
 
 class icc_assign(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         icc_assign profile
@@ -1404,7 +1404,7 @@ class icc_assign(BaseCommand):
 
 
 class icc_convert_to(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         icc_convert_to profile [intent]
@@ -1423,7 +1423,7 @@ class icc_convert_to(BaseCommand):
 
 
 class icc_remove(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         icc_remove
@@ -1433,7 +1433,7 @@ class icc_remove(BaseCommand):
 
 
 class idiv(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         idiv filename
@@ -1452,7 +1452,7 @@ class idiv(BaseCommand):
 
 
 class imul(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         imul filename
@@ -1467,7 +1467,7 @@ class imul(BaseCommand):
 
 
 class invght(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         invght -D= [-B=] [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels]
@@ -1502,7 +1502,7 @@ class invght(BaseCommand):
 
 
 class invmodasinh(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         invmodasinh -D= [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels]
@@ -1535,7 +1535,7 @@ class invmodasinh(BaseCommand):
 
 
 class invmtf(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         invmtf low mid high [channels]
@@ -1561,7 +1561,7 @@ class invmtf(BaseCommand):
 
 
 class isub(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         isub filename
@@ -1578,7 +1578,7 @@ class isub(BaseCommand):
 
 
 class jsonmetadata(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         jsonmetadata FITS_file [-stats_from_loaded] [-nostats] [-out=]
@@ -1602,7 +1602,7 @@ class jsonmetadata(BaseCommand):
 
 
 class light_curve(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         light_curve sequencename channel [-autoring] { -at=x,y | -wcs=ra,dec } { -refat=x,y | -refwcs=ra,dec } ...
@@ -1651,7 +1651,7 @@ class light_curve(BaseCommand):
 
 
 class limit(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         limit { -clip | -posrescale | -rescale }
@@ -1674,7 +1674,7 @@ class limit(BaseCommand):
 
 
 class linear_match(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         linear_match reference low high
@@ -1697,7 +1697,7 @@ class linear_match(BaseCommand):
 
 
 class link(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         link basename [-date] [-start=index] [-out=]
@@ -1722,7 +1722,7 @@ class link(BaseCommand):
 
 
 class linstretch(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         linstretch -BP= [-sat] [-clipmode=] [channels] [-clipmode=]
@@ -1747,7 +1747,7 @@ class linstretch(BaseCommand):
 
 
 class livestack(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         livestack filename
@@ -1770,7 +1770,7 @@ class livestack(BaseCommand):
 
 
 class load(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         load filename[.ext]
@@ -1786,7 +1786,7 @@ class load(BaseCommand):
 
 
 class log(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         log
@@ -1796,7 +1796,7 @@ class log(BaseCommand):
 
 
 class makepsf(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         makepsf clear
@@ -1881,7 +1881,7 @@ class makepsf(BaseCommand):
 
 
 class merge(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         merge sequence1 sequence2 [sequence3 ...] output_sequence
@@ -1907,7 +1907,7 @@ class merge(BaseCommand):
 
 
 class merge_cfa(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         merge_cfa file_CFA0 file_CFA1 file_CFA2 file_CFA3 bayerpattern
@@ -1932,7 +1932,7 @@ class merge_cfa(BaseCommand):
 
 
 class mirrorx(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         mirrorx [-bottomup]
@@ -1946,7 +1946,7 @@ class mirrorx(BaseCommand):
 
 
 class mirrorx_single(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         mirrorx_single image
@@ -1960,7 +1960,7 @@ class mirrorx_single(BaseCommand):
 
 
 class mirrory(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         mirrory
@@ -1970,7 +1970,7 @@ class mirrory(BaseCommand):
 
 
 class modasinh(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         modasinh -D= [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels]
@@ -2008,7 +2008,7 @@ class modasinh(BaseCommand):
 
 
 class mtf(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         mtf low mid high [channels]
@@ -2036,7 +2036,7 @@ class mtf(BaseCommand):
 
 
 class neg(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         neg
@@ -2046,7 +2046,7 @@ class neg(BaseCommand):
 
 
 class nozero(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         nozero level
@@ -2060,7 +2060,7 @@ class nozero(BaseCommand):
 
 
 class offline(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         offline
@@ -2070,7 +2070,7 @@ class offline(BaseCommand):
 
 
 class offset(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         offset value
@@ -2086,7 +2086,7 @@ class offset(BaseCommand):
 
 
 class online(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         online
@@ -2096,7 +2096,7 @@ class online(BaseCommand):
 
 
 class parse(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         parse str [-r]
@@ -2115,7 +2115,7 @@ class parse(BaseCommand):
 
 
 class pcc(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         pcc [-limitmag=[+-]] [-catalog=] [-bgtol=lower,upper]
@@ -2148,7 +2148,7 @@ class pcc(BaseCommand):
 
 
 class platesolve(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         platesolve [-force] [image_center_coords] [-focal=] [-pixelsize=]
@@ -2234,7 +2234,7 @@ class platesolve(BaseCommand):
 
 
 class pm(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         pm "expression" [-rescale [low] [high]] [-nosum]
@@ -2261,7 +2261,7 @@ class pm(BaseCommand):
 
 
 class profile(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         profile -from=x,y -to=x,y [-tri] [-cfa] [-arcsec] { [-savedat] | [-filename=] } [-layer=] [-width=] [-spacing=] ["-title=My Plot"]
@@ -2312,7 +2312,7 @@ class profile(BaseCommand):
 
 
 class psf(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         psf [channel]
@@ -2333,7 +2333,7 @@ class psf(BaseCommand):
 
 
 class pwd(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         pwd
@@ -2343,7 +2343,7 @@ class pwd(BaseCommand):
 
 
 class pyscript(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         pyscript scriptname.py [script_argv]
@@ -2366,7 +2366,7 @@ class pyscript(BaseCommand):
 
 
 class register(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         register sequencename [-2pass] [-selected] [-prefix=] [-scale=]
@@ -2454,7 +2454,7 @@ class register(BaseCommand):
 
 
 class requires(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         requires min_version [obsolete_version]
@@ -2472,7 +2472,7 @@ class requires(BaseCommand):
 
 
 class resample(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         resample { factor | -width= | -height= | -maxdim= } [-interp=] [-noclamp]
@@ -2507,7 +2507,7 @@ class resample(BaseCommand):
 
 
 class rgbcomp(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         rgbcomp red green blue [-out=result_filename] [-nosum]
@@ -2544,7 +2544,7 @@ class rgbcomp(BaseCommand):
 
 
 class rgradient(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         rgradient xc yc dR dalpha
@@ -2563,7 +2563,7 @@ class rgradient(BaseCommand):
 
 
 class rl(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         rl [-loadpsf=] [-alpha=] [-iters=] [-stop=] [-gdstep=] [-tv] [-fh] [-mul]
@@ -2606,7 +2606,7 @@ class rl(BaseCommand):
 
 
 class rmgreen(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         rmgreen [-nopreserve] [type] [amount]
@@ -2631,7 +2631,7 @@ class rmgreen(BaseCommand):
 
 
 class rotate(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         rotate degree [-nocrop] [-interp=] [-noclamp]
@@ -2659,7 +2659,7 @@ class rotate(BaseCommand):
 
 
 class rotatePi(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         rotatePi
@@ -2671,7 +2671,7 @@ class rotatePi(BaseCommand):
 
 
 class satu(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         satu amount [background_factor [hue_range_index]]
@@ -2697,7 +2697,7 @@ class satu(BaseCommand):
 
 
 class save(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         save filename [-chksum]
@@ -2714,7 +2714,7 @@ class save(BaseCommand):
 
 
 class savebmp(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         savebmp filename
@@ -2728,7 +2728,7 @@ class savebmp(BaseCommand):
 
 
 class savejpg(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         savejpg filename [quality]
@@ -2746,7 +2746,7 @@ class savejpg(BaseCommand):
 
 
 class savejxl(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         savejxl filename [-effort=] [-quality=] [-8bit]
@@ -2767,7 +2767,7 @@ class savejxl(BaseCommand):
 
 
 class savepng(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         savepng filename
@@ -2781,7 +2781,7 @@ class savepng(BaseCommand):
 
 
 class savepnm(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         savepnm filename
@@ -2797,7 +2797,7 @@ class savepnm(BaseCommand):
 
 
 class savetif(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         savetif filename [-astro] [-deflate]
@@ -2815,7 +2815,7 @@ class savetif(BaseCommand):
 
 
 class savetif32(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         savetif32 filename [-astro] [-deflate]
@@ -2833,7 +2833,7 @@ class savetif32(BaseCommand):
 
 
 class savetif8(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         savetif8 filename [-astro] [-deflate]
@@ -2851,7 +2851,7 @@ class savetif8(BaseCommand):
 
 
 class sb(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         sb [-loadpsf=] [-alpha=] [-iters=]
@@ -2875,7 +2875,7 @@ class sb(BaseCommand):
 
 
 class select(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         select sequencename from to
@@ -2904,7 +2904,7 @@ class select(BaseCommand):
 
 
 class seqapplyreg(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqapplyreg sequencename [-prefix=] [-scale=] [-layer=] [-framing=]
@@ -2989,7 +2989,7 @@ class seqapplyreg(BaseCommand):
 
 
 class seqccm(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqccm sequencename [-prefix=]
@@ -3008,7 +3008,7 @@ class seqccm(BaseCommand):
 
 
 class seqclean(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqclean sequencename [-reg] [-stat] [-sel]
@@ -3029,7 +3029,7 @@ class seqclean(BaseCommand):
 
 
 class seqcosme(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqcosme sequencename [filename].lst [-prefix=]
@@ -3050,7 +3050,7 @@ class seqcosme(BaseCommand):
 
 
 class seqcosme_cfa(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqcosme_cfa sequencename [filename].lst [-prefix=]
@@ -3071,7 +3071,7 @@ class seqcosme_cfa(BaseCommand):
 
 
 class seqcrop(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqcrop sequencename x y width height [-prefix=]
@@ -3092,7 +3092,7 @@ class seqcrop(BaseCommand):
 
 
 class seqextract_Green(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqextract_Green sequencename [-prefix=]
@@ -3109,7 +3109,7 @@ class seqextract_Green(BaseCommand):
 
 
 class seqextract_Ha(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqextract_Ha sequencename [-prefix=] [-upscale]
@@ -3127,7 +3127,7 @@ class seqextract_Ha(BaseCommand):
 
 
 class seqextract_HaOIII(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqextract_HaOIII sequencename [-resample=]
@@ -3144,7 +3144,7 @@ class seqextract_HaOIII(BaseCommand):
 
 
 class seqfind_cosme(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqfind_cosme sequencename cold_sigma hot_sigma [-prefix=]
@@ -3171,7 +3171,7 @@ class seqfind_cosme(BaseCommand):
 
 
 class seqfind_cosme_cfa(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqfind_cosme_cfa sequencename cold_sigma hot_sigma [-prefix=]
@@ -3198,7 +3198,7 @@ class seqfind_cosme_cfa(BaseCommand):
 
 
 class seqfindstar(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqfindstar sequencename [-layer=] [-maxstars=]
@@ -3218,7 +3218,7 @@ class seqfindstar(BaseCommand):
 
 
 class seqfixbanding(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqfixbanding sequencename amount sigma [-prefix=] [-vertical]
@@ -3247,7 +3247,7 @@ class seqfixbanding(BaseCommand):
 
 
 class seqght(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqght sequence -D= [-B=] [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels] [-prefix=]
@@ -3285,7 +3285,7 @@ class seqght(BaseCommand):
 
 
 class seqheader(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqheader sequencename keyword [keyword2 ...] [-sel] [-out=file.csv]
@@ -3309,7 +3309,7 @@ class seqheader(BaseCommand):
 
 
 class seqinvght(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqinvght sequence -D= [-B=] [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels] [-prefix=]
@@ -3348,7 +3348,7 @@ class seqinvght(BaseCommand):
 
 
 class seqinvmodasinh(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqinvmodasinh sequence -D= [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels] [-prefix=]
@@ -3387,7 +3387,7 @@ class seqinvmodasinh(BaseCommand):
 
 
 class seqlinstretch(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqlinstretch sequence -BP= [channels] [-sat] [-prefix=]
@@ -3414,7 +3414,7 @@ class seqlinstretch(BaseCommand):
 
 
 class seqmerge_cfa(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqmerge_cfa sequencename0 sequencename1 sequencename2 sequencename3 bayerpattern [-prefixout=]
@@ -3447,7 +3447,7 @@ class seqmerge_cfa(BaseCommand):
 
 
 class seqmodasinh(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqmodasinh sequence -D= [-LP=] [-SP=] [-HP=] [-clipmode=] [-human | -even | -independent | -sat] [channels] [-prefix=]
@@ -3486,7 +3486,7 @@ class seqmodasinh(BaseCommand):
 
 
 class seqmtf(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqmtf sequencename low mid high [channels] [-prefix=]
@@ -3517,7 +3517,7 @@ class seqmtf(BaseCommand):
 
 
 class seqprofile(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqprofile sequence -from=x,y -to=x,y [-tri] [-cfa] [-arcsec] [-savedat] [-layer=] [-width=] [-spacing=] [ {-xaxis=wavelength | -xaxis=wavenumber } ] [{-wavenumber1= | -wavelength1=} -wn1at=x,y {-wavenumber2= | -wavelength2=} -wn2at=x,y] ["-title=My Plot"]
@@ -3585,7 +3585,7 @@ class seqprofile(BaseCommand):
 
 
 class seqpsf(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqpsf sequencename [channel] [{ -at=x,y | -wcs=ra,dec }] [-followstar]
@@ -3622,7 +3622,7 @@ class seqpsf(BaseCommand):
 
 
 class seqplatesolve(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqplatesolve sequencename [image_center_coords] [-focal=] [-pixelsize=]
@@ -3711,7 +3711,7 @@ class seqplatesolve(BaseCommand):
 
 
 class seqresample(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqresample sequencename { -scale= | -width= | -height= } [-interp=] [-prefix=]
@@ -3747,7 +3747,7 @@ class seqresample(BaseCommand):
 
 
 class seqrl(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqrl sequencename [-loadpsf=] [-alpha=] [-iters=] [-stop=] [-gdstep=] [-tv] [-fh] [-mul]
@@ -3782,7 +3782,7 @@ class seqrl(BaseCommand):
 
 
 class seqsb(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqsb sequencename [-loadpsf=] [-alpha=] [-iters=]
@@ -3807,7 +3807,7 @@ class seqsb(BaseCommand):
 
 
 class seqsplit_cfa(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqsplit_cfa sequencename [-prefix=]
@@ -3831,7 +3831,7 @@ class seqsplit_cfa(BaseCommand):
 
 
 class seqstarnet(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqstarnet sequencename [-stretch] [-upscale] [-stride=value] [-nostarmask]
@@ -3858,7 +3858,7 @@ class seqstarnet(BaseCommand):
 
 
 class seqstat(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqstat sequencename output_file [option] [-cfa]
@@ -3891,7 +3891,7 @@ class seqstat(BaseCommand):
 
 
 class seqsubsky(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqsubsky sequencename { -rbf | degree } [-nodither] [-samples=20] [-tolerance=1.0] [-smooth=0.5] [-prefix=]
@@ -3930,7 +3930,7 @@ class seqsubsky(BaseCommand):
 
 
 class seqtilt(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         seqtilt sequencename
@@ -3949,7 +3949,7 @@ class seqtilt(BaseCommand):
 
 
 class sequpdate_key(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         sequpdate_key sequencename key value [keycomment]
@@ -3993,7 +3993,7 @@ class sequpdate_key(BaseCommand):
 
 
 class seqwiener(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         wiener sequencename [-loadpsf=] [-alpha=]
@@ -4016,7 +4016,7 @@ class seqwiener(BaseCommand):
 
 
 class set(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         set { -import=inifilepath | variable=value }
@@ -4046,7 +4046,7 @@ class set(BaseCommand):
 
 
 class set16bits(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         set16bits
@@ -4056,7 +4056,7 @@ class set16bits(BaseCommand):
 
 
 class set32bits(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         set32bits
@@ -4066,7 +4066,7 @@ class set32bits(BaseCommand):
 
 
 class setcompress(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         setcompress 0/1 [-type=] [q]
@@ -4096,7 +4096,7 @@ class setcompress(BaseCommand):
 
 
 class setcpu(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         setcpu number
@@ -4114,7 +4114,7 @@ class setcpu(BaseCommand):
 
 
 class setext(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         setext extension
@@ -4130,7 +4130,7 @@ class setext(BaseCommand):
 
 
 class setfindstar(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         setfindstar [reset] [-radius=] [-sigma=] [-roundness=] [-focal=] [-pixelsize=] [-convergence=] [ [-gaussian] | [-moffat] ] [-minbeta=] [-relax=on|off] [-minA=] [-maxA=] [-maxR=]
@@ -4214,7 +4214,7 @@ class setfindstar(BaseCommand):
 
 
 class setmem(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         setmem ratio
@@ -4232,7 +4232,7 @@ class setmem(BaseCommand):
 
 
 class setphot(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         setphot [-inner=20] [-outer=30] [-aperture=10] [-dyn_ratio=4.0] [-gain=2.3] [-min_val=0] [-max_val=60000]
@@ -4268,7 +4268,7 @@ class setphot(BaseCommand):
 
 
 class setref(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         setref sequencename image_number
@@ -4283,7 +4283,7 @@ class setref(BaseCommand):
 
 
 class spcc(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         spcc [-limitmag=[+-]] [ { -monosensor= [ -rfilter= ] [-gfilter=] [-bfilter=] | -oscsensor= [-oscfilter=] [-osclpf=] } ] [-whiteref=] [ -narrowband [-rwl=] [-gwl=] [-bwl=] [-rbw=] [-gbw=] [-bbw=] ] [-bgtol=lower,upper] [ -atmos [-obsheight=] { [-pressure=] | [-slp=] } ]
@@ -4375,7 +4375,7 @@ class spcc(BaseCommand):
 
 
 class spcc_list(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         spcc_list { oscsensor | monosensor | redfilter | greenfilter | bluefilter | oscfilter | osclpf | whiteref }
@@ -4392,7 +4392,7 @@ class spcc_list(BaseCommand):
 
 
 class split(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         split file1 file2 file3 [-hsl | -hsv | -lab]
@@ -4416,7 +4416,7 @@ class split(BaseCommand):
 
 
 class split_cfa(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         split_cfa
@@ -4426,7 +4426,7 @@ class split_cfa(BaseCommand):
 
 
 class stack(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         stack seqfilename
@@ -4526,7 +4526,7 @@ class stack(BaseCommand):
 
 
 class stackall(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         stackall
@@ -4580,7 +4580,7 @@ class stackall(BaseCommand):
 
 
 class starnet(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         starnet [-stretch] [-upscale] [-stride=value] [-nostarmask]
@@ -4612,7 +4612,7 @@ class starnet(BaseCommand):
 
 
 class start_ls(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         start_ls [-dark=filename] [-flat=filename] [-rotate] [-32bits]
@@ -4639,7 +4639,7 @@ class start_ls(BaseCommand):
 
 
 class stat(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         stat [-cfa] [main]
@@ -4658,7 +4658,7 @@ class stat(BaseCommand):
 
 
 class stop_ls(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         stop_ls
@@ -4670,7 +4670,7 @@ class stop_ls(BaseCommand):
 
 
 class subsky(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         subsky { -rbf | degree } [-dither] [-samples=20] [-tolerance=1.0] [-smooth=0.5] [-existing]
@@ -4704,7 +4704,7 @@ class subsky(BaseCommand):
 
 
 class synthstar(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         synthstar
@@ -4722,7 +4722,7 @@ class synthstar(BaseCommand):
 
 
 class threshlo(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         threshlo level
@@ -4736,7 +4736,7 @@ class threshlo(BaseCommand):
 
 
 class threshhi(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         threshi level
@@ -4750,7 +4750,7 @@ class threshhi(BaseCommand):
 
 
 class thresh(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         thresh lo hi
@@ -4765,7 +4765,7 @@ class thresh(BaseCommand):
 
 
 class trixel(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         trixel [-p]
@@ -4785,7 +4785,7 @@ class trixel(BaseCommand):
 
 
 class unclipstars(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         unclipstars
@@ -4795,7 +4795,7 @@ class unclipstars(BaseCommand):
 
 
 class unpurple(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         unpurple [-starmask] [-blue=value] [-thresh=value]
@@ -4816,7 +4816,7 @@ class unpurple(BaseCommand):
 
 
 class unselect(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         unselect sequencename from to
@@ -4834,7 +4834,7 @@ class unselect(BaseCommand):
 
 
 class unsharp(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         unsharp sigma multi
@@ -4853,7 +4853,7 @@ class unsharp(BaseCommand):
 
 
 class update_key(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         update_key key value [keycomment]
@@ -4893,7 +4893,7 @@ class update_key(BaseCommand):
 
 
 class wavelet(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         wavelet nbr_layers type
@@ -4912,7 +4912,7 @@ class wavelet(BaseCommand):
 
 
 class wiener(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         wiener [-loadpsf=] [-alpha=]
@@ -4933,7 +4933,7 @@ class wiener(BaseCommand):
 
 
 class wrecons(BaseCommand):
-    """
+    r"""
     .. code-block:: text
 
         wrecons c1 c2 c3 ...

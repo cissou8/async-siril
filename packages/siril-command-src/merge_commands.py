@@ -18,7 +18,7 @@ def extract_class_docs(source_text: str) -> dict[str, str]:
     """
     class_blocks = {}
     # Match classes with docstrings: triple quotes (""" or ''')
-    pattern = re.compile(r'((class\s+\w+\s*\(.*?\):)\n\s+"""(?:.|\n)*?""")', re.MULTILINE)
+    pattern = re.compile(r'((class\s+\w+\s*\(.*?\):)\n\s+r"""(?:.|\n)*?""")', re.MULTILINE)
 
     for match in pattern.finditer(source_text):
         block = match.group(1)
@@ -53,7 +53,7 @@ def replace_docstrings(
             removed_classes.append(class_def_line)
             return match.group(0)
 
-    pattern = re.compile(r'((class\s+\w+\s*\(.*?\):)\n\s+"""(?:.|\n)*?""")', re.MULTILINE)
+    pattern = re.compile(r'((class\s+\w+\s*\(.*?\):)\n\s+r"""(?:.|\n)*?""")', re.MULTILINE)
     new_text = pattern.sub(replacer, destination_text)
 
     # Classes that are in the source but not destination (need to add manually)
@@ -69,7 +69,7 @@ class MergeSirilCommands:
         cappa.Arg(
             help="Destination file to write the merged command classes to",
         ),
-    ]
+    ] = pathlib.Path("../../src/async_siril/command.py")
 
     async def __call__(self) -> None:
         log.info("Starting merge siril scriptable commands")

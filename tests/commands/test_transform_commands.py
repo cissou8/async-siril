@@ -131,11 +131,13 @@ class TestFFTICommand:
         assert str(cmd) == "ffti 1 2"
         assert cmd.valid is True
 
+
 class TestSplitCommand:
     def test_split(self):
         _command = command.split("r", "g", "b")
         assert str(_command) == "split r g b"
         assert _command.valid
+
 
 class TestResampleCommand:
     def test_resample_ratio(self):
