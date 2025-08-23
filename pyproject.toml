@@ -1,6 +1,6 @@
 [project]
 name = "async-siril"
-version = "0.1.5"
+version = "0.2.0"
 description = "Python async wrapper around Siril astrophotography software."
 readme = "README.md"
 authors = [
