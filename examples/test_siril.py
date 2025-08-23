@@ -5,7 +5,7 @@ import structlog.stdlib
 import asyncio
 import cappa
 
-from async_siril.siril import SirilCli
+from async_siril import SirilCli
 from async_siril.command import get
 from async_siril.command_types import SirilSetting
 from rich.prompt import Confirm

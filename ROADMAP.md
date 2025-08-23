@@ -25,9 +25,11 @@
 * [x] developer docs
 * [x] base container image usage with Siril pre-installed (started)
 * [x] More test coverage and coverage reporting
+* [x] clean up core siril imports to hide internals for library
 * [ ] multi process support (named pipes need to be dynamic, only available on Linux)
 * [ ] multi process examples (ex. stack by filter in parallel by process)
 * [ ] make rgb cli example
 * [ ] clean up the command & types import signatures to be less verbose
 * [ ] multiple siril version support (how to with generated commands)
 * [ ] additional composit helpers or commands to reduce boilerplate repetition and provide best practices
+* [ ] can `await siril.{some_command}(...)` be made as a convience to `await siril.some_command(...)`?

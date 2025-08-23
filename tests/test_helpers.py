@@ -1,7 +1,7 @@
 import pytest
 import pathlib
 
-from async_siril.helpers import BestRejection
+from async_siril import BestRejection
 from async_siril.command_types import stack_rejection
 
 

@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from async_siril.resources import SirilResource
+from async_siril import SirilResource
 
 
 class TestSirilResource:

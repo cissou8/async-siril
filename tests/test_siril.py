@@ -4,10 +4,9 @@ import subprocess
 from pathlib import Path
 from unittest.mock import Mock, AsyncMock, patch, PropertyMock
 
-from async_siril.siril import SirilError, SirilCli
+from async_siril import SirilError, SirilCli, SirilResource
 from async_siril.command import BaseCommand
 from async_siril.command_types import SirilSetting
-from async_siril.resources import SirilResource
 
 
 class TestSirilError:

@@ -8,7 +8,7 @@ import pathlib
 import tempfile
 import typing as t
 
-from async_siril.siril import SirilCli
+from async_siril import SirilCli, BestRejection
 from async_siril.command import (
     setext,
     set32bits,
@@ -23,7 +23,6 @@ from async_siril.command import (
     save,
 )
 from async_siril.command import fits_extension, stack_norm
-from async_siril.helpers import BestRejection
 
 log = structlog.stdlib.get_logger()
 

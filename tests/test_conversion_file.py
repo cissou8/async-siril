@@ -1,7 +1,7 @@
 import pathlib
 import tempfile
 
-from async_siril.conversion_file import ConversionEntry, ConversionFile
+from async_siril import ConversionEntry, ConversionFile
 
 
 class TestConversionEntry:

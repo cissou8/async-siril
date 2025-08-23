@@ -8,7 +8,7 @@ import pathlib
 import tempfile
 import typing as t
 
-from async_siril.siril import SirilCli
+from async_siril import SirilCli
 from async_siril.command import setext, set32bits, cd, convert, stack, calibrate
 from async_siril.command import fits_extension
 
