@@ -46,27 +46,31 @@ class TestAsyncSirilEventConsumer:
                 assert result == mock_task
                 mock_create_task.assert_called_once()
 
-    def test_consumer_stop_when_running(self, consumer):
+    @pytest.mark.asyncio
+    async def test_consumer_stop_when_running(self, consumer):
         consumer._running = True
         mock_task = Mock()
         mock_task.cancel = Mock()  # Ensure cancel is not async
         consumer._task = mock_task
         consumer._pipe = Mock()
 
-        consumer.stop()
+        with patch("asyncio.wait_for", return_value=None):
+            await consumer.stop()
 
         assert consumer._running is False
         consumer._task.cancel.assert_called_once()
         consumer._pipe.close.assert_called_once()
 
-    def test_consumer_stop_when_not_running(self, consumer):
+    @pytest.mark.asyncio
+    async def test_consumer_stop_when_not_running(self, consumer):
         consumer._running = False
         mock_task = Mock()
         mock_task.cancel = Mock()  # Ensure cancel is not async
         consumer._task = mock_task
         consumer._pipe = Mock()
 
-        consumer.stop()
+        with patch("asyncio.wait_for", return_value=None):
+            await consumer.stop()
 
         consumer._task.cancel.assert_called_once()
         consumer._pipe.close.assert_called_once()
@@ -202,28 +206,32 @@ class TestAsyncSirilCommandProducer:
                 assert result == mock_task
                 mock_create_task.assert_called_once()
 
-    def test_producer_stop_when_running(self, producer):
+    @pytest.mark.asyncio
+    async def test_producer_stop_when_running(self, producer):
         producer._running = True
         mock_task = Mock()
         mock_task.cancel = Mock()  # Ensure cancel is not async
         producer._task = mock_task
         producer._pipe = Mock()
 
-        producer.stop()
+        with patch("asyncio.wait_for", return_value=None):
+            await producer.stop()
 
         assert producer._running is False
         assert producer.fifo_closed.done()
         producer._task.cancel.assert_called_once()
         producer._pipe.close.assert_called_once()
 
-    def test_producer_stop_when_not_running(self, producer):
+    @pytest.mark.asyncio
+    async def test_producer_stop_when_not_running(self, producer):
         producer._running = False
         mock_task = Mock()
         mock_task.cancel = Mock()  # Ensure cancel is not async
         producer._task = mock_task
         producer._pipe = Mock()
 
-        producer.stop()
+        with patch("asyncio.wait_for", return_value=None):
+            await producer.stop()
 
         producer._task.cancel.assert_called_once()
         producer._pipe.close.assert_called_once()
@@ -364,8 +372,9 @@ class TestIntegrationScenarios:
                 assert producer_task is not None
 
                 # Stop both
-                consumer.stop()
-                producer.stop()
+                with patch("asyncio.wait_for", return_value=None):
+                    await consumer.stop()
+                    await producer.stop()
 
                 assert consumer._running is False
                 assert producer._running is False

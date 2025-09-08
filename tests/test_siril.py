@@ -232,23 +232,34 @@ class TestSirilCli:
     async def test_stop_process(self, siril_cli):
         # Setup mock process and tasks
         mock_process = Mock()
-        mock_task1 = AsyncMock()
-        mock_task2 = AsyncMock()
+        mock_process.returncode = None  # Process is still running
+        mock_process.wait = AsyncMock()  # Make wait async
+        mock_task1 = Mock()
+        mock_task1.done.return_value = False
+        mock_task1.cancel = Mock()
+        mock_task2 = Mock()
+        mock_task2.done.return_value = False
+        mock_task2.cancel = Mock()
 
         siril_cli._process = mock_process
         siril_cli._log_tasks = [mock_task1, mock_task2]
 
         with (
-            patch.object(siril_cli._consumer, "stop") as mock_consumer_stop,
-            patch.object(siril_cli._producer, "stop") as mock_producer_stop,
+            patch.object(siril_cli._consumer, "stop", new_callable=AsyncMock) as mock_consumer_stop,
+            patch.object(siril_cli._producer, "stop", new_callable=AsyncMock) as mock_producer_stop,
             patch("asyncio.gather", return_value=None) as mock_gather,
+            patch("asyncio.wait_for", return_value=None) as mock_wait_for,
         ):
             await siril_cli._stop()
 
             mock_consumer_stop.assert_called_once()
             mock_producer_stop.assert_called_once()
             mock_process.kill.assert_called_once()
+            mock_process.wait.assert_called_once()
+            mock_task1.cancel.assert_called_once()
+            mock_task2.cancel.assert_called_once()
             mock_gather.assert_called_once_with(mock_task1, mock_task2, return_exceptions=True)
+            mock_wait_for.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_stop_process_with_exception(self, siril_cli):
@@ -256,9 +267,9 @@ class TestSirilCli:
         siril_cli._log_tasks = []
 
         with (
-            patch.object(siril_cli._consumer, "stop", side_effect=Exception("Stop error")),
-            patch.object(siril_cli._producer, "stop"),
-            patch("asyncio.gather"),
+            patch.object(siril_cli._consumer, "stop", new_callable=AsyncMock, side_effect=Exception("Stop error")),
+            patch.object(siril_cli._producer, "stop", new_callable=AsyncMock),
+            patch("asyncio.wait_for"),
         ):
             # Should not raise exception
             await siril_cli._stop()

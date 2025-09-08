@@ -96,17 +96,27 @@ class AsyncSirilEventConsumer:
         self._task = asyncio.create_task(self._run(), name=type(self).__name__)
         return self._task
 
-    def stop(self):
+    async def stop(self):
         """Gracefully stop the background reader."""
         if self._running:
             logger.info("Stopping consumer fifo pipe")
             self._running = False
 
         if self._task:
+            logger.info("Cancelling consumer task")
             self._task.cancel()
+            try:
+                await asyncio.wait_for(self._task, timeout=1.0)
+            except asyncio.TimeoutError:
+                logger.warning("Consumer task did not cancel in time")
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.warning(f"Error stopping consumer task: {e}")
 
         if self._pipe:
             self._pipe.close()
+        logger.info("Consumer stopped")
 
     async def _run(self):
         """Main consumer loop that waits for writers and reads FIFO."""
@@ -137,14 +147,19 @@ class AsyncSirilEventConsumer:
 
     async def _aiter_events(self) -> t.AsyncGenerator[SirilEvent, None]:
         """Asynchronously yield events from a blocking file object."""
-        while self._running:
-            line = await self._pipe.read_line()
-            if line == "":
-                logger.info("Consumer fifo pipe closed")
-                self.fifo_closed.set_result(None)
-                break
+        try:
+            while self._running:
+                line = await self._pipe.read_line()
+                if line == "":
+                    logger.info("Consumer fifo pipe closed")
+                    if not self.fifo_closed.done():
+                        self.fifo_closed.set_result(None)
+                    break
 
-            yield SirilEvent(line)
+                yield SirilEvent(line)
+        except asyncio.CancelledError:
+            logger.debug("Consumer event iteration cancelled")
+            raise
 
 
 class AsyncSirilCommandProducer:
@@ -171,18 +186,29 @@ class AsyncSirilCommandProducer:
         self._task = asyncio.create_task(self._run(), name=type(self).__name__)
         return self._task
 
-    def stop(self):
+    async def stop(self):
         """Gracefully stop the background writer."""
         if self._running:
             logger.info("Stopping producer fifo pipe")
             self._running = False
-            self.fifo_closed.set_result(None)
+            if not self.fifo_closed.done():
+                self.fifo_closed.set_result(None)
 
         if self._task:
+            logger.info("Cancelling producer task")
             self._task.cancel()
+            try:
+                await asyncio.wait_for(self._task, timeout=1.0)
+            except asyncio.TimeoutError:
+                logger.warning("Producer task did not cancel in time")
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.warning(f"Error stopping producer task: {e}")
 
         if self._pipe:
             self._pipe.close()
+        logger.info("Producer stopped")
 
     async def send(self, command: str):
         """Send a message to be written to the FIFO."""
@@ -271,10 +297,18 @@ class PipeClient:
                 await asyncio.sleep(0.1)
 
     def close(self):
-        """Close the pipe"""
+        """Close the pipe and cleanup file"""
         if self._file:
             self._file.close()
             self._file = None
+
+        # Remove the named pipe file if it exists (Unix only)
+        if not self._is_windows and os.path.exists(self.path):
+            try:
+                os.unlink(self.path)
+                logger.debug(f"Removed pipe file: {self.path}")
+            except OSError as e:
+                logger.warning(f"Could not remove pipe file {self.path}: {e}")
 
     async def write_line(self, message: str):
         """Write a line to the pipe"""

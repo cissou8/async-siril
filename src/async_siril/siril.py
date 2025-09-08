@@ -108,23 +108,41 @@ class SirilCli(object):
     async def _stop(self):
         logger.info("Stopping AsyncSiril process")
         try:
-            self._consumer.stop()
-            self._producer.stop()
-            self._process.kill()
+            # Kill process first to break pipe connections and unblock I/O
+            if self._process and self._process.returncode is None:
+                self._process.kill()
+                await self._process.wait()
+                logger.info("Siril CLI Process killed")
 
-            # Ensure all log tasks finish
-            await asyncio.gather(*self._log_tasks, return_exceptions=True)
+            # Now stop consumer and producer - they should exit naturally since pipes are broken
+            await self._consumer.stop()
+            await self._producer.stop()
+
+            # Cancel and wait for log tasks
+            for task in self._log_tasks:
+                if not task.done():
+                    task.cancel()
+
+            try:
+                await asyncio.wait_for(asyncio.gather(*self._log_tasks, return_exceptions=True), timeout=1.0)
+            except asyncio.TimeoutError:
+                logger.warning("Log tasks did not cancel in time")
+            logger.info("AsyncSiril Cleanup completed")
         except Exception as e:
             logger.error("error during close: %s" % e)
 
     async def _log_stream(self, stream, stream_name):
         """Read lines from a subprocess stream and log them via structlog."""
-        while True:
-            line = await stream.readline()
-            if not line:
-                break
-            decoded = line.decode().rstrip()
-            logger.info("siril_output", stream=stream_name, message=decoded)
+        try:
+            while True:
+                line = await stream.readline()
+                if not line:
+                    break
+                decoded = line.decode().rstrip()
+                logger.info("siril_output", stream=stream_name, message=decoded)
+        except asyncio.CancelledError:
+            logger.debug(f"Log stream {stream_name} cancelled")
+            raise
 
     async def command(self, cmd: t.Union[str, t.List[str], BaseCommand, t.List[BaseCommand]]):
         """Will run a command on the Siril pipe and throw `SirilError`'s as it sees them."""
