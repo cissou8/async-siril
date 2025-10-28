@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import enum
+import pathlib
 import structlog.stdlib
 import typing as t
 
@@ -64,6 +65,8 @@ class CommandArgument:
             return f"'{self.value}'"
         elif isinstance(self.value, enum.Enum):
             return str(self.value.value)
+        elif isinstance(self.value, pathlib.Path):
+            return f"'{str(self.value)}'"
         else:
             return str(self.value)
 
@@ -97,6 +100,8 @@ class CommandOption:
             return f"'-{self.name}={self.value}'"
         elif isinstance(self.value, enum.Enum):
             return f"-{self.name}={self.value.value}"
+        elif isinstance(self.value, pathlib.Path):
+            return f"'-{self.name}={str(self.value)}'"
         else:
             return f"-{self.name}={self.value}"
 
@@ -325,9 +330,9 @@ class calibrate(BaseCommand):
     def __init__(
         self,
         base_name: str,
-        bias: t.Optional[str] = None,
-        dark: t.Optional[str] = None,
-        flat: t.Optional[str] = None,
+        bias: t.Optional[str | pathlib.Path] = None,
+        dark: t.Optional[str | pathlib.Path] = None,
+        flat: t.Optional[str | pathlib.Path] = None,
         cfa: bool = False,
         debayer: bool = False,
         fix_xtrans: bool = False,
@@ -507,7 +512,7 @@ class cd(BaseCommand):
     The argument **directory** can contain the ~ token, expanded as the home directory, directories with spaces in the name can be protected using single or double quotes
     """
 
-    def __init__(self, directory: str):
+    def __init__(self, directory: str | pathlib.Path):
         super().__init__()
         self.append(CommandArgument(directory))
 
@@ -623,7 +628,7 @@ class convert(BaseCommand):
         use_fitseq: bool = False,
         use_ser: bool = False,
         start_index: t.Optional[int] = None,
-        output_dir: t.Optional[str] = None,
+        output_dir: t.Optional[str | pathlib.Path] = None,
     ):
         super().__init__()
         self.append(CommandArgument(base_name))
@@ -652,7 +657,7 @@ class convertraw(BaseCommand):
         use_fitseq: bool = False,
         use_ser: bool = False,
         start_index: t.Optional[int] = None,
-        output_dir: t.Optional[str] = None,
+        output_dir: t.Optional[str | pathlib.Path] = None,
     ):
         super().__init__()
         self.append(CommandArgument(base_name))
@@ -2707,7 +2712,7 @@ class save(BaseCommand):
     Links: :ref:`setext <setext>`
     """
 
-    def __init__(self, filename: str, chksum: bool = False):
+    def __init__(self, filename: str | pathlib.Path, chksum: bool = False):
         super().__init__()
         self.append(CommandArgument(filename))
         self.append(CommandFlag("chksum", chksum))
@@ -2722,7 +2727,7 @@ class savebmp(BaseCommand):
     Saves current image under the form of a bitmap file with 8-bit per channel: **filename**.bmp (BMP 24-bit)
     """
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str | pathlib.Path):
         super().__init__()
         self.append(CommandArgument(filename))
 
@@ -2738,7 +2743,7 @@ class savejpg(BaseCommand):
     The compression quality can be adjusted using the optional **quality** value, 100 being the best and default, while a lower value increases the compression ratio
     """
 
-    def __init__(self, filename: str, quality: t.Optional[int] = None):
+    def __init__(self, filename: str | pathlib.Path, quality: t.Optional[int] = None):
         super().__init__()
         self.append(CommandArgument(filename))
         if quality is not None:
@@ -2757,7 +2762,7 @@ class savejxl(BaseCommand):
     """
 
     def __init__(
-        self, filename: str, effort: t.Optional[int] = None, quality: t.Optional[float] = None, bit_8: bool = False
+        self, filename: str | pathlib.Path, effort: t.Optional[int] = None, quality: t.Optional[float] = None, bit_8: bool = False
     ):
         super().__init__()
         self.append(CommandArgument(filename))
@@ -2775,7 +2780,7 @@ class savepng(BaseCommand):
     Saves current image into a PNG file: **filename**.png, with 16 bits per channel if the loaded image is 16 or 32 bits, and 8 bits per channel if the loaded image is 8 bits
     """
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str | pathlib.Path):
         super().__init__()
         self.append(CommandArgument(filename))
 
@@ -2791,7 +2796,7 @@ class savepnm(BaseCommand):
     The extension of the output will be **filename**.ppm for RGB image and **filename**.pgm for gray-level image
     """
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str | pathlib.Path):
         super().__init__()
         self.append(CommandArgument(filename))
 
@@ -2807,7 +2812,7 @@ class savetif(BaseCommand):
     See also SAVETIF32 and SAVETIF8
     """
 
-    def __init__(self, filename: str, astro: bool = False, deflate: bool = False):
+    def __init__(self, filename: str | pathlib.Path, astro: bool = False, deflate: bool = False):
         super().__init__()
         self.append(CommandArgument(filename))
         self.append(CommandFlag("astro", astro))
@@ -2825,7 +2830,7 @@ class savetif32(BaseCommand):
     Links: :ref:`savetif <savetif>`
     """
 
-    def __init__(self, filename: str, astro: bool = False, deflate: bool = False):
+    def __init__(self, filename: str | pathlib.Path, astro: bool = False, deflate: bool = False):
         super().__init__()
         self.append(CommandArgument(filename))
         self.append(CommandFlag("astro", astro))
@@ -2843,7 +2848,7 @@ class savetif8(BaseCommand):
     Links: :ref:`savetif <savetif>`
     """
 
-    def __init__(self, filename: str, astro: bool = False, deflate: bool = False):
+    def __init__(self, filename: str | pathlib.Path, astro: bool = False, deflate: bool = False):
         super().__init__()
         self.append(CommandArgument(filename))
         self.append(CommandFlag("astro", astro))
@@ -4402,9 +4407,9 @@ class split(BaseCommand):
 
     def __init__(
         self,
-        file1: str,
-        file2: str,
-        file3: str,
+        file1: str | pathlib.Path,
+        file2: str | pathlib.Path,
+        file3: str | pathlib.Path,
         method: t.Optional[split_option] = None,
     ):
         super().__init__()
@@ -4498,7 +4503,7 @@ class stack(BaseCommand):
         output_norm: bool = False,
         weighting: stack_weighting = stack_weighting.NO_WEIGHT,
         rgb_equalization: bool = False,
-        out: t.Optional[str] = None,
+        out: t.Optional[str | pathlib.Path] = None,
     ):
         super().__init__()
         # TODO: review - this works but is not a complete interface defintion

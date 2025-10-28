@@ -1,4 +1,5 @@
 import enum
+import pathlib
 
 from async_siril.command import CommandArgument, CommandFlag, CommandOption, BaseCommand
 from async_siril.command_types import stack_rejection, fits_extension
@@ -46,6 +47,20 @@ class TestCommandArgument:
         assert arg.value == "value with spaces"
         assert arg.valid is True
         assert str(arg) == "'value with spaces'"
+    
+    def test_command_argument_with_path(self):
+        arg = CommandArgument(pathlib.Path("/Users/A/"))
+
+        assert arg.value == pathlib.Path("/Users/A")
+        assert arg.valid is True
+        assert str(arg) == "'/Users/A'"
+    
+    def test_command_argument_with_path_containing_spaces(self):
+        arg = CommandArgument(pathlib.Path("/Users/A/Target A/"))
+
+        assert arg.value == pathlib.Path("/Users/A/Target A")
+        assert arg.valid is True
+        assert str(arg) == "'/Users/A/Target A'"
 
     def test_command_argument_with_enum(self):
         arg = CommandArgument(ExampleEnum.VALUE_ONE)
@@ -88,6 +103,13 @@ class TestCommandArgument:
         assert arg.value == ""
         assert arg.valid is True  # Empty string is still a valid value
         assert str(arg) == ""
+    
+    def test_command_argument_with_empty_path(self):
+        arg = CommandArgument(pathlib.Path(""))
+
+        assert arg.value == pathlib.Path(".")
+        assert arg.valid is True  # Empty string is still a valid value
+        assert str(arg) == "'.'"
 
 
 class TestCommandFlag:
